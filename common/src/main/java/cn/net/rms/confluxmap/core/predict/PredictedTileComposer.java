@@ -281,7 +281,7 @@ public final class PredictedTileComposer {
                         kind, biomes[idx], fluids[idx], palette, syncedMaterials,
                         corrected[outIdx], colors[outIdx], floorColors[outIdx], baselineMapColorId,
                         materials[outIdx], floorMaterials[outIdx], grid.blockX(x), grid.blockZ(z),
-                        surface, floorSurface, kinds, x, z, lod, xaeroShadow
+                        surface, floorSurface, kinds, x, z, lod, xaeroShadow, ambientLightTint
                     );
                     continue;
                 }
@@ -344,7 +344,8 @@ public final class PredictedTileComposer {
         final int x,
         final int z,
         final int lod,
-        final XaeroMapStyle.Shadow shadow
+        final XaeroMapStyle.Shadow shadow,
+        final int ambientLightTint
     ) {
         final int idx = BaselineGrid.index(x, z);
         final int blocksPerPixel = TileMath.blocksPerPixel(lod);
@@ -381,8 +382,10 @@ public final class PredictedTileComposer {
             correctedMapColorId, correctedFloorMapColorId, baselineMapColorId,
             1.0, materialId, floorMaterialId, worldX, worldZ
         );
+        // The ambient bake is part of the deferred-light pixel representation, not a style
+        // choice: captured roof tiles carry it, and the light pipeline replaces it later.
         return XaeroMapStyle.applyTerrain(
-            base, surface[idx],
+            Argb.multiply(base, ambientLightTint), surface[idx],
             slopeSampleHeight(surface, kinds, x, z - 1),
             slopeSampleHeight(surface, kinds, x - 1, z - 1),
             blocksPerPixel, true, shadow

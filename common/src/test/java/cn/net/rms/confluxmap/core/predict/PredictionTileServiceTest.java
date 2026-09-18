@@ -8,7 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import cn.net.rms.confluxmap.core.color.BiomeColorPalette;
 import cn.net.rms.confluxmap.core.color.DaylightModel;
 import cn.net.rms.confluxmap.core.color.LightTint;
+import cn.net.rms.confluxmap.core.color.MapColorStyle;
 import cn.net.rms.confluxmap.core.color.ShadingPipeline;
+import cn.net.rms.confluxmap.core.color.XaeroMapStyle;
 import cn.net.rms.confluxmap.core.config.ConfluxConfig;
 import cn.net.rms.confluxmap.core.model.ChunkSnapshot;
 import cn.net.rms.confluxmap.core.model.DimensionId;
@@ -712,6 +714,60 @@ class PredictionTileServiceTest {
 
             assertTrue(Argb.red(pixels[0]) > Argb.red(pixels[1]));
             assertTrue(Argb.green(pixels[0]) > Argb.green(pixels[1]));
+        } finally {
+            executors.shutdown(2000);
+        }
+    }
+
+    @Test
+    void xaeroNetherRoofPredictionKeepsTheCapturedRoofRepresentationAtHighGamma(@TempDir final Path tempDir) {
+        Assumptions.assumeTrue(NativeLib.initForTests(), "native prediction library unavailable on this platform");
+        final SessionGuard sessionGuard = new SessionGuard();
+        final MapExecutors executors = new MapExecutors();
+        final DaylightModel daylight = new DaylightModel();
+        daylight.update(0f, 1f);
+        final TileService uploads = new TileService(
+            new MapWorldService(), executors, new ConfluxConfig(), daylight
+        );
+        final PredictionState state = new PredictionState();
+        state.setPresets(WorldPreset.DEFAULT, WorldPreset.DEFAULT);
+        state.setSeed(146008555L, McVersions.toCubiomes("1.17").orElseThrow());
+        final PredictionTileService predictionTiles = newService(
+            sessionGuard, state, executors, uploads
+        );
+        predictionTiles.setMapColorStyle(MapColorStyle.XAERO);
+        predictionTiles.bindDaylightModel(daylight);
+        final CorrectionStore corrections = new CorrectionStore(tempDir);
+        predictionTiles.bindCorrectionStore(corrections);
+        sessionGuard.begin(WORLD, DimensionId.NETHER);
+        corrections.onSessionChanged(sessionGuard.current());
+
+        try {
+            final int[] pixels = predictionTiles.snapshotTile(
+                new TileKey(
+                    WORLD, DimensionId.NETHER,
+                    MapLayer.NETHER_CEILING.cacheId() + PredictedTileKeys.SUFFIX,
+                    0, 0, 0
+                ),
+                PredictionViewMode.EVERYWHERE
+            ).join();
+
+            // Captured Xaero roof pixels keep their zero-light Nether ambient bake through
+            // composition (TileService applies no light replacement to NETHER_CEILING in the
+            // Xaero branch), so the prediction must render identically instead of being
+            // gamma-rebrightened into a bright pink plate.
+            assertEquals(
+                XaeroMapStyle.applyTerrain(
+                    Argb.multiply(
+                        MapColorTable.argb(PredictionDimensions.NETHER_ROOF_MAP_COLOR_ID),
+                        LightTint.multiplier(0, 0, true)
+                    ),
+                    PredictionDimensions.NETHER_ROOF_Y, PredictionDimensions.NETHER_ROOF_Y,
+                    PredictionDimensions.NETHER_ROOF_Y, 1, true,
+                    XaeroMapStyle.Shadow.NETHER
+                ),
+                pixels[10 * 256 + 10]
+            );
         } finally {
             executors.shutdown(2000);
         }

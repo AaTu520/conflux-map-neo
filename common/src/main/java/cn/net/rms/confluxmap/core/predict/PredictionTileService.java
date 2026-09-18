@@ -236,14 +236,15 @@ public final class PredictionTileService {
             : model.state();
         final float gamma = lighting.gamma();
         if (layer == MapLayer.Type.NETHER_CEILING) {
-            for (int pixel = 0; pixel < pixels.length; pixel++) {
-                pixels[pixel] = style == MapColorStyle.XAERO
-                    ? LightTint.applyGammaOverBakedLight(
-                        pixels[pixel], blockLight[pixel] & 0xFF, true, gamma
-                    )
-                    : LightTint.applyBlockLightOverAmbient(
+            // Captured Xaero roof tiles keep their zero-light ambient bake untouched
+            // (TileService's composeXaeroColumn applies no light replacement to
+            // NETHER_CEILING), so the prediction must match instead of being re-lit.
+            if (style != MapColorStyle.XAERO) {
+                for (int pixel = 0; pixel < pixels.length; pixel++) {
+                    pixels[pixel] = LightTint.applyBlockLightOverAmbient(
                         pixels[pixel], blockLight[pixel] & 0xFF, true, gamma
                     );
+                }
             }
             return AppliedLighting.NONE;
         }

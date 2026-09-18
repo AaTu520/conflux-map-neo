@@ -232,6 +232,39 @@ class PredictedTileComposerTest {
     }
 
     @Test
+    void xaeroNetherRoofBakesTheUnlitAmbientTintLikeCapturedTiles() {
+        final BaselineGrid grid = flatGrid(CubiomesBiomeIds.NETHER_WASTES);
+        final DerivedGrid derived = new DerivedGrid();
+        Arrays.fill(derived.surfaceY, PredictionDimensions.NETHER_ROOF_Y);
+        Arrays.fill(derived.kind, (byte) SurfaceKind.BEDROCK_CEILING.ordinal());
+        final int sampledBedrock = 0xFF383838;
+        final PredictionPalette palette = PredictionPalette.fromSamples(
+            Map.of(),
+            Map.of(SurfaceKind.BEDROCK_CEILING, MaterialDetailProfile.flat()),
+            Map.of(),
+            Map.of(SurfaceKind.BEDROCK_CEILING, sampledBedrock)
+        );
+
+        final int[] pixels = PredictedTileComposer.compose(
+            derived, grid, palette, null, PredictionViewMode.EVERYWHERE, 0,
+            PredictionDimensions.NETHER_ROOF_MAP_COLOR_ID, derived, grid,
+            PredictionDimensions.NETHER_ROOF_MAP_COLOR_ID, false,
+            LightTint.multiplier(0, 0, true), null,
+            MapColorStyle.XAERO, XaeroMapStyle.Shadow.NETHER
+        );
+
+        assertEquals(
+            XaeroMapStyle.applyTerrain(
+                Argb.multiply(sampledBedrock, LightTint.multiplier(0, 0, true)),
+                PredictionDimensions.NETHER_ROOF_Y, PredictionDimensions.NETHER_ROOF_Y,
+                PredictionDimensions.NETHER_ROOF_Y, 1, true, XaeroMapStyle.Shadow.NETHER
+            ),
+            pixels[10 * 256 + 10],
+            "the predicted Xaero roof must carry the unlit Nether ambient bake captured roof tiles use"
+        );
+    }
+
+    @Test
     void predictionSlopeUsesContinuousMagnitudeInsteadOfAFixedContourStep() {
         final int flat = composeSlopePixel(80, 80, 0);
         final int oneBlockRise = composeSlopePixel(80, 81, 0);
