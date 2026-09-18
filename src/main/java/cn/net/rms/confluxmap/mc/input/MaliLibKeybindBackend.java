@@ -28,7 +28,6 @@ import java.util.Objects;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
-import org.lwjgl.glfw.GLFW;
 
 /** Loaded only after Fabric Loader confirms that MaliLib is present. */
 final class MaliLibKeybindBackend implements IKeybindProvider, IConfigHandler {
@@ -101,7 +100,7 @@ final class MaliLibKeybindBackend implements IKeybindProvider, IConfigHandler {
         //#if MC>=12111
         //$$ return KeybindMulti.getKeyCode(client.options.debugModifierKey);
         //#else
-        return GLFW.GLFW_KEY_F3;
+        return cn.net.rms.confluxmap.compat.Keys.F3;
         //#endif
     }
 

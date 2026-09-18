@@ -16,7 +16,6 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
-import org.lwjgl.glfw.GLFW;
 
 /** Screen base that keeps the MatrixStack-to-DrawContext rewrite at one lifecycle seam. */
 public abstract class ConfluxScreen extends Screen {
@@ -204,7 +203,7 @@ public abstract class ConfluxScreen extends Screen {
     //#else
     public boolean keyPressed(final int keyCode, final int scanCode, final int modifiers) {
     //#endif
-        if ((keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER)
+        if ((keyCode == cn.net.rms.confluxmap.compat.Keys.ENTER || keyCode == cn.net.rms.confluxmap.compat.Keys.KP_ENTER)
             && enterAction != null && enterActionEnabled.getAsBoolean()) {
             enterAction.run();
             return true;

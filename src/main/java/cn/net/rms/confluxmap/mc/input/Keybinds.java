@@ -19,7 +19,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
-import org.lwjgl.glfw.GLFW;
+import cn.net.rms.confluxmap.compat.Keys;
 
 /** Selects one input backend while routing every gameplay action through one handler. */
 public final class Keybinds {
@@ -59,7 +59,7 @@ public final class Keybinds {
         if (maliLibBackend != null) {
             actionHandler = detectedHandler;
             if (maliLibBackend.requiresVanillaConfigShortcut()) {
-                maliLibHint = register("configure_hotkeys", GLFW.GLFW_KEY_UNKNOWN);
+                maliLibHint = register("configure_hotkeys", Keys.UNKNOWN);
                 maliLibBackend.syncConfigScreenKey(maliLibHint);
             } else {
                 maliLibHint = null;
@@ -87,7 +87,13 @@ public final class Keybinds {
     private static KeyBinding registerTranslation(final String translationKey, final int key) {
         //#if MC>=260100
         //$$ return KeyMappingHelper.registerKeyMapping(
-        //$$     new KeyMapping(translationKey, InputConstants.Type.KEYSYM, key, CATEGORY)
+        //$$     new KeyMapping(translationKey,
+        //#if MC>=260300
+        //$$         InputConstants.Type.KEYBOARD,
+        //#else
+        //$$         InputConstants.Type.KEYSYM,
+        //#endif
+        //$$         key, CATEGORY)
         //$$ );
         //#else
         return KeyBindingHelper.registerKeyBinding(

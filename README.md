@@ -22,6 +22,7 @@ Conflux Map is a Fabric minimap and world map mod. The client runs on its own: t
 | `1.21.11`  | 1.21.11                 | ✓      | ✓            |
 | `26.1.2`   | 26.1, 26.1.1, 26.1.2    | ✓      | ✓            |
 | `26.2`     | 26.2                   | ✓      | ✓            |
+| `26.3`     | 26.3                   | ✓      | —            |
 
 ## Installation
 

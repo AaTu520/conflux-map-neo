@@ -33,7 +33,12 @@ final class InGameHudMixinTargetTest {
         assertNotNull(redirect, "scoreboard bounds capture must remain a redirect");
 
         final MixinTargetProbe.Result result = MixinTargetProbe.probe(
-            HUD_CLASS, redirect.method()[0], redirect.at().target()
+            HUD_CLASS, redirect.method()[0],
+            //#if MC>=260300
+            //$$ redirect.at()[0].target()
+            //#else
+            redirect.at().target()
+            //#endif
         );
 
         assertTrue(result.methodFound(), "the redirect's scoreboard target method must exist");

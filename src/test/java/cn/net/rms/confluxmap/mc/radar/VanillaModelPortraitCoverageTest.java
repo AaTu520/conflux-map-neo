@@ -58,6 +58,8 @@ final class VanillaModelPortraitCoverageTest {
         "ChestBoatEntityModel",
         "ChestEntityModel",
         "ChestRaftEntityModel",
+        // 26.3's cushion is throwable furniture like boats, not a living mob.
+        "CushionModel",
         "ConduitEntityModel",
         "DecoratedPotEntityModel",
         "DragonHeadEntityModel",

@@ -1,0 +1,23 @@
+# Mapping file for version 26.2 to 26.3
+# Format: old_version_class new_version_class
+#
+# 26.3 extracts the GPU abstraction out of blaze3d into the renderpearl library (pure package
+# moves) and renames the redstone wire block to its modern spelling. API shape changes (SDL
+# windowing instead of GLFW, the pipeline builder, VertexSorter's replacement) belong in
+# preprocessor branches at their call sites, not here.
+com.mojang.blaze3d.buffers.GpuBuffer com.mojang.renderpearl.api.buffers.GpuBuffer
+com.mojang.blaze3d.GpuFormat com.mojang.renderpearl.api.GpuFormat
+com.mojang.blaze3d.pipeline.BindGroupLayout com.mojang.renderpearl.api.pipeline.BindGroupLayout
+com.mojang.blaze3d.pipeline.ColorTargetState com.mojang.renderpearl.api.pipeline.ColorTargetState
+com.mojang.blaze3d.pipeline.RenderPipeline com.mojang.renderpearl.api.pipeline.RenderPipeline
+com.mojang.blaze3d.platform.GlStateManager com.mojang.renderpearl.backend.opengl.GlStateManager
+com.mojang.blaze3d.PrimitiveTopology com.mojang.renderpearl.api.pipeline.PrimitiveTopology
+com.mojang.blaze3d.shaders.UniformType com.mojang.renderpearl.api.pipeline.UniformType
+com.mojang.blaze3d.systems.RenderPass com.mojang.renderpearl.api.commands.RenderPass
+com.mojang.blaze3d.textures.AddressMode com.mojang.renderpearl.api.textures.AddressMode
+com.mojang.blaze3d.textures.FilterMode com.mojang.renderpearl.api.textures.FilterMode
+com.mojang.blaze3d.textures.GpuSampler com.mojang.renderpearl.api.textures.GpuSampler
+com.mojang.blaze3d.textures.GpuTexture com.mojang.renderpearl.api.textures.GpuTexture
+com.mojang.blaze3d.textures.GpuTextureView com.mojang.renderpearl.api.textures.GpuTextureView
+com.mojang.blaze3d.vertex.VertexFormat com.mojang.renderpearl.api.vertex.VertexFormat
+net.minecraft.world.level.block.RedStoneWireBlock net.minecraft.world.level.block.RedstoneWireBlock

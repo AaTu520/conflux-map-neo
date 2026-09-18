@@ -101,7 +101,12 @@ public final class OffscreenCanvas {
             || framebuffer.textureHeight != heightPx;
         if (created) {
             close();
-            //#if MC>=260200
+            //#if MC>=260300
+            //$$ // 26.3 RenderTargets describe both attachments as formats; null depth means none.
+            //$$ framebuffer = new TextureTarget(
+            //$$     "Conflux Map canvas", widthPx, heightPx, GpuFormat.RGBA8_UNORM, null
+            //$$ );
+            //#elseif MC>=260200
             //$$ framebuffer = new TextureTarget(
             //$$     "Conflux Map canvas", widthPx, heightPx, false, GpuFormat.RGBA8_UNORM
             //$$ );

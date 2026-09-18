@@ -6,7 +6,9 @@ public final class MinecraftVersion {
     }
 
     public static String current() {
-        //#if MC>=260200
+        //#if MC>=260300
+        //$$ return "26.3";
+        //#elseif MC>=260200
         //$$ return "26.2";
         //#elseif MC>=260100
         //$$ return "26.1.2";

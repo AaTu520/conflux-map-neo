@@ -1,19 +1,19 @@
 package cn.net.rms.confluxmap.mc.input;
 
-import org.lwjgl.glfw.GLFW;
+import cn.net.rms.confluxmap.compat.Keys;
 
 /** One user action shared by the vanilla and optional MaliLib keybind backends. */
 enum KeybindAction {
-    TOGGLE_MINIMAP("toggle_minimap", "toggleMinimap", GLFW.GLFW_KEY_H, "H"),
-    CYCLE_ZOOM("zoom_in", "zoomIn", GLFW.GLFW_KEY_RIGHT_BRACKET, "RIGHT_BRACKET"),
-    OPEN_MAP("open_map", "openMap", GLFW.GLFW_KEY_M, "M"),
-    CYCLE_LAYER("cycle_layer", "cycleLayer", GLFW.GLFW_KEY_Y, "Y"),
-    OPEN_WAYPOINTS("waypoints", "openWaypoints", GLFW.GLFW_KEY_U, "U"),
-    NEW_WAYPOINT("new_waypoint", "newWaypoint", GLFW.GLFW_KEY_B, "B"),
-    TOGGLE_LOCAL_WAYPOINTS("toggle_local_waypoints", "toggleLocalWaypoints", GLFW.GLFW_KEY_J, "J"),
-    OPEN_CONFIG("open_config", "openConfig", GLFW.GLFW_KEY_COMMA, "COMMA"),
-    CYCLE_PREDICTION("cycle_prediction", "cyclePrediction", GLFW.GLFW_KEY_P, "P"),
-    RELOAD_PREDICTION("reload_prediction", "reloadPrediction", GLFW.GLFW_KEY_F9, "F9");
+    TOGGLE_MINIMAP("toggle_minimap", "toggleMinimap", Keys.H, "H"),
+    CYCLE_ZOOM("zoom_in", "zoomIn", Keys.RIGHT_BRACKET, "RIGHT_BRACKET"),
+    OPEN_MAP("open_map", "openMap", Keys.M, "M"),
+    CYCLE_LAYER("cycle_layer", "cycleLayer", Keys.Y, "Y"),
+    OPEN_WAYPOINTS("waypoints", "openWaypoints", Keys.U, "U"),
+    NEW_WAYPOINT("new_waypoint", "newWaypoint", Keys.B, "B"),
+    TOGGLE_LOCAL_WAYPOINTS("toggle_local_waypoints", "toggleLocalWaypoints", Keys.J, "J"),
+    OPEN_CONFIG("open_config", "openConfig", Keys.COMMA, "COMMA"),
+    CYCLE_PREDICTION("cycle_prediction", "cyclePrediction", Keys.P, "P"),
+    RELOAD_PREDICTION("reload_prediction", "reloadPrediction", Keys.F9, "F9");
 
     private final String translationSuffix;
     private final String configName;

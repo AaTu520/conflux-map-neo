@@ -137,7 +137,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Fullscreen, panning/zooming explorable map. Opened and closed by the
@@ -1670,18 +1669,18 @@ public final class FullscreenMapScreen extends ConfluxScreen {
     //#endif
         if (exportSelectionScreen != null) {
             //#if MC>=12109
-            //$$ if (keyCode == GLFW.GLFW_KEY_ESCAPE || openMapKey != null && openMapKey.matchesKey(input)) {
+            //$$ if (keyCode == cn.net.rms.confluxmap.compat.Keys.ESCAPE || openMapKey != null && openMapKey.matchesKey(input)) {
             //#else
-            if (keyCode == GLFW.GLFW_KEY_ESCAPE
+            if (keyCode == cn.net.rms.confluxmap.compat.Keys.ESCAPE
                 || openMapKey != null && openMapKey.matchesKey(keyCode, scanCode)) {
             //#endif
                 cancelExportSelection();
                 return true;
             }
         }
-        final boolean controlDown = (modifiers & (GLFW.GLFW_MOD_CONTROL | GLFW.GLFW_MOD_SUPER)) != 0;
-        final boolean shiftDown = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
-        if (controlDown && keyCode == GLFW.GLFW_KEY_Z) {
+        final boolean controlDown = (modifiers & (cn.net.rms.confluxmap.compat.Keys.MOD_CONTROL | cn.net.rms.confluxmap.compat.Keys.MOD_SUPER)) != 0;
+        final boolean shiftDown = (modifiers & cn.net.rms.confluxmap.compat.Keys.MOD_SHIFT) != 0;
+        if (controlDown && keyCode == cn.net.rms.confluxmap.compat.Keys.Z) {
             if (shiftDown) {
                 redoAnnotationChange();
             } else {
@@ -1689,29 +1688,29 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             }
             return true;
         }
-        if (controlDown && keyCode == GLFW.GLFW_KEY_Y) {
+        if (controlDown && keyCode == cn.net.rms.confluxmap.compat.Keys.Y) {
             redoAnnotationChange();
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_F9) {
+        if (keyCode == cn.net.rms.confluxmap.compat.Keys.F9) {
             ConfluxMapClient.get().reloadPredictionTiles();
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE && openTargetSelector != null) {
+        if (keyCode == cn.net.rms.confluxmap.compat.Keys.ESCAPE && openTargetSelector != null) {
             openTargetSelector = null;
             targetDropdownScrollOffset = 0;
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE && annotationColorMenuOpen) {
+        if (keyCode == cn.net.rms.confluxmap.compat.Keys.ESCAPE && annotationColorMenuOpen) {
             annotationColorMenuOpen = false;
             rebuildWaypointControls();
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE && locationMenuBounds != null) {
+        if (keyCode == cn.net.rms.confluxmap.compat.Keys.ESCAPE && locationMenuBounds != null) {
             dismissLocationMenu();
             return true;
         }
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE && toolPanel.openGroup() != null) {
+        if (keyCode == cn.net.rms.confluxmap.compat.Keys.ESCAPE && toolPanel.openGroup() != null) {
             final boolean closingDrawing = toolPanel.isOpen(FullscreenMapToolPanel.Group.DRAWING);
             toolPanel.close();
             if (closingDrawing) {

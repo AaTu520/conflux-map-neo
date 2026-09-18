@@ -14,7 +14,10 @@ package cn.net.rms.confluxmap.gametest;
 //#if MC>=260200
 //$$ import net.minecraft.world.entity.EntityTypes;
 //#endif
-//$$ import org.lwjgl.glfw.GLFW;
+//#if MC>=260300
+//$$ // Inactive //$$ imports pass through earlier links unmapped; use the final name or the shim.
+//#endif
+//$$ import cn.net.rms.confluxmap.compat.Keys;
 //#endif
 
 /** Proves companion login, dynamic radar portraits, and non-blocking cold structure lookup. */
@@ -95,10 +98,10 @@ package cn.net.rms.confluxmap.gametest;
 //#endif
 //$$             }), 100);
 //$$             final long controlStartedAt = System.nanoTime();
-//$$             context.getInput().pressKey(GLFW.GLFW_KEY_F8);
+//$$             context.getInput().pressKey(Keys.F8);
 //$$             final long controlElapsedMs = (System.nanoTime() - controlStartedAt) / 1_000_000L;
 //$$             final long startedAt = System.nanoTime();
-//$$             context.getInput().pressKey(GLFW.GLFW_KEY_M);
+//$$             context.getInput().pressKey(Keys.M);
 //$$             final long elapsedMs = (System.nanoTime() - startedAt) / 1_000_000L;
 //$$             context.waitForScreen(FullscreenMapScreen.class);
 //$$             final long limitMs = Math.max(

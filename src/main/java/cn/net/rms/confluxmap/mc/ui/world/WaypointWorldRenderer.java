@@ -35,8 +35,14 @@ import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 //#endif
 //#if MC>=260200
+//#if MC>=260300
+//$$ // 26.3 collectors submit text/backgrounds natively, so the Fabric ordering wrappers
+//$$ // are no longer needed on this path.
+//$$ import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
+//#else
 //$$ import net.fabricmc.fabric.api.client.rendering.v1.FabricOrderedSubmitNodeCollector;
 //$$ import net.fabricmc.fabric.api.client.rendering.v1.SubmitRenderPhases;
+//#endif
 //#endif
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
@@ -825,7 +831,10 @@ public final class WaypointWorldRenderer {
             anchorY * projectionScale,
             anchorZ * projectionScale
         );
-        //#if MC>=260200
+        //#if MC>=260300
+        //$$ // 26.3 dropped mulPose(Quaternionf); rotate through a matrix.
+        //$$ matrices.mulPose(new Matrix4f().rotation(cameraRotation));
+        //#elseif MC>=260200
         //$$ matrices.mulPose(cameraRotation);
         //#else
         matrices.multiply(camera.getRotation());
@@ -836,7 +845,10 @@ public final class WaypointWorldRenderer {
         matrices.scale(-scale, -scale, scale);
         //#endif
 
-        //#if MC>=260200
+        //#if MC>=260300
+        //$$ final OrderedSubmitNodeCollector plates = submits.order(0);
+        //$$ final OrderedSubmitNodeCollector text = submits.order(1);
+        //#elseif MC>=260200
         //$$ final FabricOrderedSubmitNodeCollector plates =
         //$$     (FabricOrderedSubmitNodeCollector) submits.order(0);
         //$$ final FabricOrderedSubmitNodeCollector text =
@@ -919,8 +931,13 @@ public final class WaypointWorldRenderer {
     //$$ private void drawIcon(
     //$$     final PoseStack matrices,
     //$$     final Font textRenderer,
+    //#if MC>=260300
+    //$$     final OrderedSubmitNodeCollector plates,
+    //$$     final OrderedSubmitNodeCollector text,
+    //#else
     //$$     final FabricOrderedSubmitNodeCollector plates,
     //$$     final FabricOrderedSubmitNodeCollector text,
+    //#endif
     //$$     final SubmitNodeCollector submits,
     //#else
     private void drawIcon(
@@ -984,6 +1001,39 @@ public final class WaypointWorldRenderer {
     }
 
     //#if MC>=260200
+    //#if MC>=260300
+    //$$ private static void submitRect(
+    //$$     final OrderedSubmitNodeCollector submits,
+    //$$     final PoseStack matrices,
+    //$$     final float x,
+    //$$     final float y,
+    //$$     final float width,
+    //$$     final float height,
+    //$$     final int color
+    //$$ ) {
+    //$$     // 26.3 removed RenderTypes.textBackgroundSeeThrough and rebuilt the text Submit
+    //$$     // records around Content objects; the collector's own background submit replaces
+    //$$     // the custom-geometry path entirely.
+    //$$     submits.submitTextBackground(
+    //$$         matrices, x, y, x + width, y + height, color,
+    //$$         Font.DisplayMode.SEE_THROUGH, LABEL_LIGHT
+    //$$     );
+    //$$ }
+    //$$
+    //$$ private static void submitText(
+    //$$     final OrderedSubmitNodeCollector submits,
+    //$$     final PoseStack matrices,
+    //$$     final String text,
+    //$$     final float x,
+    //$$     final float y,
+    //$$     final int color
+    //$$ ) {
+    //$$     submits.submitText(
+    //$$         matrices, x, y, Component.literal(text).getVisualOrderText(),
+    //$$         false, Font.DisplayMode.SEE_THROUGH, LABEL_LIGHT, color, 0, 0
+    //$$     );
+    //$$ }
+    //#else
     //$$ private static void submitRect(
     //$$     final FabricOrderedSubmitNodeCollector submits,
     //$$     final PoseStack matrices,
@@ -1032,6 +1082,7 @@ public final class WaypointWorldRenderer {
     //$$         )
     //$$     );
     //$$ }
+    //#endif
     //#endif
 
     static int withAlpha(final int argb, final float alpha) {

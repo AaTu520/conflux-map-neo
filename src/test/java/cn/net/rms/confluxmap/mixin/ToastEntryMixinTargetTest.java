@@ -34,7 +34,12 @@ final class ToastEntryMixinTargetTest {
         assertNotNull(redirect, "toast measurement must remain a redirect");
 
         final MixinTargetProbe.Result result = MixinTargetProbe.probe(
-            ENTRY_CLASS, redirect.method()[0], redirect.at().target()
+            ENTRY_CLASS, redirect.method()[0],
+            //#if MC>=260300
+            //$$ redirect.at()[0].target()
+            //#else
+            redirect.at().target()
+            //#endif
         );
 
         assertTrue(result.methodFound(), "the redirect's toast target method must exist");

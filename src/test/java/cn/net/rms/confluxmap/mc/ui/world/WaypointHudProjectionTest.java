@@ -167,6 +167,18 @@ final class WaypointHudProjectionTest {
     //$$     final String submitRect = methodBody(source, "\n    private static void submitRect(");
     //$$     final String submitText = methodBody(source, "\n    private static void submitText(");
     //$$
+    //#if MC>=260300
+    //$$     // 26.3 collectors submit text phases natively; the water-mask ordering the
+    //$$     // ALWAYS_ON_TOP phase used to provide is the vanilla text phase's own.
+    //$$     assertTrue(
+    //$$         submitRect.contains("submits.submitTextBackground("),
+    //$$         "26.3 waypoint plates must render through the collector's text-background phase"
+    //$$     );
+    //$$     assertTrue(
+    //$$         submitText.contains("submits.submitText("),
+    //$$         "26.3 waypoint text must render through the collector's text phase"
+    //$$     );
+    //#else
     //$$     assertTrue(
     //$$         submitRect.contains("SubmitRenderPhases.ALWAYS_ON_TOP"),
     //$$         "26.2 waypoint plates must render after the water mask phase"
@@ -175,6 +187,7 @@ final class WaypointHudProjectionTest {
     //$$         submitText.contains("SubmitRenderPhases.ALWAYS_ON_TOP"),
     //$$         "26.2 waypoint text must render after the water mask phase"
     //$$     );
+    //#endif
     //$$ }
     //$$
     //$$ @Test

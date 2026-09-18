@@ -62,8 +62,17 @@ public final class EndCityStructureGameTest implements FabricGameTest {
     //$$         endWorld.registryAccess(),
     //$$         generator,
     //$$         generator.getBiomeSource(),
+    //#if MC>=260300
+    //$$         // 26.3 generate() takes the climate sampler up front, the random state stays,
+    //$$         // and the template manager replaced the structure manager argument.
+    //$$         endWorld.getChunkSource().randomState().createClimateSampler(
+    //$$             net.minecraft.world.level.levelgen.densityfunction.SamplerContext.EMPTY_UNCACHED),
+    //$$         endWorld.getChunkSource().randomState(),
+    //$$         endWorld.getStructureTemplateManager(),
+    //#else
     //$$         endWorld.getChunkSource().randomState(),
     //$$         endWorld.getStructureManager(),
+    //#endif
     //$$         endWorld.getSeed(),
     //$$         new ChunkPos(blockX >> 4, blockZ >> 4),
     //$$         0,

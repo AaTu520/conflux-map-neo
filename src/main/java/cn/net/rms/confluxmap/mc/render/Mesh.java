@@ -345,6 +345,25 @@ public final class Mesh {
     //$$             () -> "Conflux Map immediate " + pipeline.getLocation(),
     //$$             target.getColorTextureView(),
     //$$             Optional.empty(),
+    //#if MC>=260300
+    //$$             // 26.3 replaced RenderTarget.useDepth with hasDepth(); the pipeline must be
+    //$$             // compiled through the game's fallback cache before setPipeline accepts it,
+    //$$             // flattenSamplers became flattenUniforms, and bindTexture became setUniform.
+    //$$             target.hasDepth() ? target.getDepthTextureView() : null,
+    //$$             OptionalDouble.empty()
+    //$$         )) {
+    //$$             pass.setPipeline(RenderUtil.compiled(pipeline));
+    //$$             RenderSystem.bindDefaultUniforms(pass);
+    //$$             pass.setUniform("DynamicTransforms", dynamicTransforms);
+    //$$             pass.setVertexBuffer(0, info.vertexBuffer().slice());
+    //$$             RenderUtil.applyScissor(pass);
+    //$$             if (BindGroupLayout.flattenUniforms(pipeline.getBindGroupLayouts()).stream()
+    //$$                     .anyMatch(layout -> layout.name().equals("Sampler0"))
+    //$$                 && RenderUtil.boundTexture() != null
+    //$$                 && RenderUtil.boundSampler() != null) {
+    //$$                 pass.setUniform("Sampler0", RenderUtil.boundTexture(), RenderUtil.boundSampler());
+    //$$             }
+    //#else
     //$$             target.useDepth ? target.getDepthTextureView() : null,
     //$$             OptionalDouble.empty()
     //$$         )) {
@@ -358,6 +377,7 @@ public final class Mesh {
     //$$                 && RenderUtil.boundSampler() != null) {
     //$$                 pass.bindTexture("Sampler0", RenderUtil.boundTexture(), RenderUtil.boundSampler());
     //$$             }
+    //#endif
     //$$             pass.setIndexBuffer(info.indexBuffer(), info.indexType());
     //$$             pass.drawIndexed(info.indexCount(), 1, info.firstIndex(), info.baseVertex(), 0);
     //$$         }

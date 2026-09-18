@@ -9,6 +9,11 @@ import java.nio.file.Path;
 //#if MC>=12105
 //$$ import cn.net.rms.confluxmap.mc.render.RenderUtil;
 //$$ import com.mojang.blaze3d.pipeline.RenderPipeline;
+//#if MC>=260300
+//$$ // Inactive //$$ lines pass through earlier links verbatim without mapping, so this
+//$$ // import must already use the 26.3 package name.
+//$$ import com.mojang.renderpearl.api.pipeline.ColorTargetState;
+//#endif
 //$$ import java.lang.reflect.Field;
 //#endif
 import org.junit.jupiter.api.Test;
@@ -46,7 +51,14 @@ final class PlayerTrailAlphaCompositingTest {
     //$$     final Field field = RenderUtil.class.getDeclaredField("GUI_PRESERVE_DESTINATION_ALPHA");
     //$$     field.setAccessible(true);
     //$$     final RenderPipeline pipeline = (RenderPipeline) field.get(null);
-    //#if MC>=260100
+    //#if MC>=260300
+    //$$     // 26.3 replaced the per-channel write accessors with a writeMask bit field.
+    //$$     final ColorTargetState state = pipeline.getColorTargetStates().get(0);
+    //$$     assertTrue((state.writeMask() & ColorTargetState.WRITE_RED) != 0);
+    //$$     assertTrue((state.writeMask() & ColorTargetState.WRITE_GREEN) != 0);
+    //$$     assertTrue((state.writeMask() & ColorTargetState.WRITE_BLUE) != 0);
+    //$$     assertTrue((state.writeMask() & ColorTargetState.WRITE_ALPHA) == 0);
+    //#elseif MC>=260100
     //$$     assertTrue(pipeline.getColorTargetState().writeRed());
     //$$     assertTrue(pipeline.getColorTargetState().writeGreen());
     //$$     assertTrue(pipeline.getColorTargetState().writeBlue());

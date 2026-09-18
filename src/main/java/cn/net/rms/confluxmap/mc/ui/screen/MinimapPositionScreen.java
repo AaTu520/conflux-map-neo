@@ -13,7 +13,7 @@ import net.minecraft.client.MinecraftClient;
 //$$ import net.minecraft.client.input.KeyInput;
 //#endif
 import net.minecraft.client.gui.screen.Screen;
-import org.lwjgl.glfw.GLFW;
+import cn.net.rms.confluxmap.compat.Keys;
 
 /** Explicit edit mode for dragging the minimap without consuming normal gameplay clicks. */
 public final class MinimapPositionScreen extends ConfluxScreen {
@@ -85,21 +85,16 @@ public final class MinimapPositionScreen extends ConfluxScreen {
     //#endif
         int deltaX = 0;
         int deltaY = 0;
-        switch (keyCode) {
-            case GLFW.GLFW_KEY_LEFT:
-                deltaX = -1;
-                break;
-            case GLFW.GLFW_KEY_RIGHT:
-                deltaX = 1;
-                break;
-            case GLFW.GLFW_KEY_UP:
-                deltaY = -1;
-                break;
-            case GLFW.GLFW_KEY_DOWN:
-                deltaY = 1;
-                break;
-            default:
-                break;
+        // Keys.* are not compile-time constants on 26.3 (SDL codes resolve at class init),
+        // so this cannot be a switch over them.
+        if (keyCode == Keys.LEFT) {
+            deltaX = -1;
+        } else if (keyCode == Keys.RIGHT) {
+            deltaX = 1;
+        } else if (keyCode == Keys.UP) {
+            deltaY = -1;
+        } else if (keyCode == Keys.DOWN) {
+            deltaY = 1;
         }
         if (deltaX != 0 || deltaY != 0) {
             applyPosition(MinimapPlacement.nudge(

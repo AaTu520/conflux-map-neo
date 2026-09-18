@@ -224,8 +224,22 @@ public final class RenderUtil {
     //$$ }
     //#endif
 
+    //#if MC>=260300
+    //$$ /**
+    //$$  * 26.3 pipelines must be compiled before a render pass accepts them; the game's
+    //$$  * fallback cache owns the live compiler and is refreshed on every shader reload.
+    //$$  */
+    //$$ static com.mojang.renderpearl.api.pipeline.CompiledRenderPipeline compiled(final RenderPipeline pipeline) {
+    //$$     return RenderSystem.fallbackPipelineCache.get(pipeline);
+    //$$ }
+    //#endif
+
     public static void rotateZ(final MatrixStack matrices, final float degrees) {
-        //#if MC>=11900
+        //#if MC>=260300
+        //$$ // 26.3 dropped mulPose(Quaternionf); rotate through a matrix instead.
+        //$$ matrices.mulPose(new org.joml.Matrix4f().rotation(
+        //$$     new Quaternionf().rotationZ((float) Math.toRadians(degrees))));
+        //#elseif MC>=11900
         //$$ matrices.multiply(new Quaternionf().rotationZ((float) Math.toRadians(degrees)));
         //#else
         matrices.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(degrees));
@@ -1041,12 +1055,23 @@ public final class RenderUtil {
     //#if MC>=260200
     //$$     final RenderPipeline.Builder builder = RenderPipeline.builder()
     //$$         .withLocation("pipeline/confluxmap_gui_preserve_destination_alpha")
+    //#if MC>=260300
+    //$$         .withVertexShader(gui.getShaders().get(com.mojang.renderpearl.api.pipeline.ShaderType.VERTEX))
+    //$$         .withFragmentShader(gui.getShaders().get(com.mojang.renderpearl.api.pipeline.ShaderType.FRAGMENT))
+    //#else
     //$$         .withVertexShader(gui.getVertexShader())
     //$$         .withFragmentShader(gui.getFragmentShader())
+    //#endif
     //$$         .withCull(gui.isCull())
     //$$         .withColorTargetState(new ColorTargetState(
+    //#if MC>=260300
+    //$$             // 26.3 dropped the singular accessor; the list holds one entry for GUI.
+    //$$             gui.getColorTargetStates().get(0).blendFunction(),
+    //$$             gui.getColorTargetStates().get(0).format(),
+    //#else
     //$$             gui.getColorTargetState().blendFunction(),
     //$$             gui.getColorTargetState().format(),
+    //#endif
     //$$             ColorTargetState.WRITE_COLOR
     //$$         ))
     //$$         .withVertexBinding(0, gui.getVertexFormatBinding(0))
@@ -1057,8 +1082,13 @@ public final class RenderUtil {
     //#else
     //$$     final RenderPipeline.Builder builder = RenderPipeline.builder()
     //$$         .withLocation("pipeline/confluxmap_gui_preserve_destination_alpha")
+    //#if MC>=260300
+    //$$         .withVertexShader(gui.getShaders().get(com.mojang.renderpearl.api.pipeline.ShaderType.VERTEX))
+    //$$         .withFragmentShader(gui.getShaders().get(com.mojang.renderpearl.api.pipeline.ShaderType.FRAGMENT))
+    //#else
     //$$         .withVertexShader(gui.getVertexShader())
     //$$         .withFragmentShader(gui.getFragmentShader())
+    //#endif
     //$$         .withVertexFormat(gui.getVertexFormat(), gui.getVertexFormatMode());
     //#if MC>=260100
     //$$     builder
@@ -1091,11 +1121,20 @@ public final class RenderUtil {
     //#if MC>=260200
     //$$     final RenderPipeline.Builder builder = RenderPipeline.builder()
     //$$         .withLocation("pipeline/confluxmap_gui_replace")
+    //#if MC>=260300
+    //$$         .withVertexShader(gui.getShaders().get(com.mojang.renderpearl.api.pipeline.ShaderType.VERTEX))
+    //$$         .withFragmentShader(gui.getShaders().get(com.mojang.renderpearl.api.pipeline.ShaderType.FRAGMENT))
+    //#else
     //$$         .withVertexShader(gui.getVertexShader())
     //$$         .withFragmentShader(gui.getFragmentShader())
+    //#endif
     //$$         .withCull(gui.isCull())
     //$$         .withColorTargetState(new ColorTargetState(
+    //#if MC>=260300
+    //$$             Optional.empty(), gui.getColorTargetStates().get(0).format(), ColorTargetState.WRITE_ALL
+    //#else
     //$$             Optional.empty(), gui.getColorTargetState().format(), ColorTargetState.WRITE_ALL
+    //#endif
     //$$         ))
     //$$         .withVertexBinding(0, gui.getVertexFormatBinding(0))
     //$$         .withPrimitiveTopology(gui.getPrimitiveTopology());
@@ -1105,8 +1144,13 @@ public final class RenderUtil {
     //#else
     //$$     final RenderPipeline.Builder builder = RenderPipeline.builder()
     //$$         .withLocation("pipeline/confluxmap_gui_replace")
+    //#if MC>=260300
+    //$$         .withVertexShader(gui.getShaders().get(com.mojang.renderpearl.api.pipeline.ShaderType.VERTEX))
+    //$$         .withFragmentShader(gui.getShaders().get(com.mojang.renderpearl.api.pipeline.ShaderType.FRAGMENT))
+    //#else
     //$$         .withVertexShader(gui.getVertexShader())
     //$$         .withFragmentShader(gui.getFragmentShader())
+    //#endif
     //$$         .withVertexFormat(gui.getVertexFormat(), gui.getVertexFormatMode());
     //#if MC>=260100
     //$$     builder
