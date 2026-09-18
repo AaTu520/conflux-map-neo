@@ -104,6 +104,7 @@ public final class StructureIconCatalog {
         put(icons, StructureIndex.StructureType.END_CITY, "item/shulker_shell");
         put(icons, StructureIndex.StructureType.TRAIL_RUINS, "item/brush");
         put(icons, StructureIndex.StructureType.TRIAL_CHAMBERS, "item/trial_key");
+        put(icons, StructureIndex.StructureType.ABANDONED_CAMP, "item/campfire");
         put(icons, StructureIndex.StructureType.STRONGHOLD, "item/ender_eye");
         put(icons, StructureIndex.StructureType.NETHER_FOSSIL, "block/bone_block_side");
         return icons;

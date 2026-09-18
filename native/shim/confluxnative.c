@@ -32,6 +32,7 @@
 #include <math.h>
 
 #include "finders.h"
+#include "features/end_city.h"
 #include "terrain_features.h"
 
 #define CFX_ABI 12

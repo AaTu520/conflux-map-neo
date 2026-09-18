@@ -16,7 +16,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class NetherFossilNativeTest {
-    private static final int FOSSIL = 26;
+    private static final int FOSSIL = 20;
 
     record Sample(String version, long seed, String bits) {
         @Override

@@ -75,6 +75,8 @@ public final class McVersions {
         putSelection(selections, 30, "26.1-26.1.2", "26.1", "26.1.1", "26.1.2");
         // 26.2 adds the Chaos Cubed worldgen family, including sulfur caves.
         putSelection(selections, 31, "26.2", "26.2");
+        // 26.3 adds abandoned camps and shifts the biome tree (btree263).
+        putSelection(selections, 32, "26.3", "26.3");
         SELECTIONS = List.copyOf(selections);
     }
 

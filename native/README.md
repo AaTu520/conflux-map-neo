@@ -12,9 +12,10 @@ for what it predicts; this file is only the build/maintenance side.
 ## Layout
 
 - `cubiomes/` - a git submodule pointing at this project's fork
-  [`Conflux-Union/cubiomes`](https://github.com/Conflux-Union/cubiomes) (itself
-  a fork of [`Cubitect/cubiomes`](https://github.com/Cubitect/cubiomes)),
-  MIT-licensed. Pinned to commit `9afc103` via the submodule gitlink; the
+  [`Conflux-Union/cubiomes`](https://github.com/Conflux-Union/cubiomes) (a fork
+  of the active [`xpple/cubiomes`](https://github.com/xpple/cubiomes) line, which
+  continues [`Cubitect/cubiomes`](https://github.com/Cubitect/cubiomes)),
+  MIT-licensed. Pinned to commit `f75f0a3` via the submodule gitlink; the
   pinned commit and upstream URL are also recorded in `CUBIOMES_COMMIT` for
   readability. Only the files needed to link
   `setupGenerator`/`applySeed`/`genBiomes`/`mapApproxHeight`/
@@ -22,9 +23,11 @@ for what it predicts; this file is only the build/maintenance side.
   `mapEndSurfaceHeight`/`getChunkNaturalTreeCandidates`/`getStructurePos`/
   `isViableStructurePos`/`isViableEndCityTerrain`/stronghold iteration are compiled
   by `buildNativesHost`/`buildNativesAll` (`biomenoise`, `biomes`, `generator`,
-  `layers`, `noise`, `finders`, `terrain_features`, `features/stronghold`,
-  `util`, `rng.h`, `tables/`) - other upstream utilities this project never
-  calls (`quadbase.c/h`) ship in the submodule but are not compiled. To change
+  `layers`, `noise`, `terrainnoise`, `finders`, `terrain_features`,
+  `features/end_city`, `features/fortress`, `features/abandoned_camp`,
+  `features/stronghold`, `util`, `rng.h`, `tables/`) - other upstream utilities
+  this project never calls (`quadbase.c/h`, `carver.c/h`, the loot library)
+  ship in the submodule but are not compiled. To change
   cubiomes, commit on the fork and bump the
   submodule pin (`git -C native/cubiomes checkout <commit> && git add native/cubiomes`);
   do not keep a divergent local copy.

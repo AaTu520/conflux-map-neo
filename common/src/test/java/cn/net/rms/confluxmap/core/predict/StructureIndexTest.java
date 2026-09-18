@@ -429,16 +429,22 @@ class StructureIndexTest {
         assertTrue(overworld.contains(StructureIndex.StructureType.ANCIENT_CITY));
         assertTrue(overworld.contains(StructureIndex.StructureType.TRAIL_RUINS));
         assertTrue(overworld.contains(StructureIndex.StructureType.TRIAL_CHAMBERS));
+        // 26.1 keeps the 26.2-era catalog; abandoned camps only join at MC 26.3.
         assertEquals(17, overworld.size());
+        assertEquals(18, StructureIndex.StructureType.availableIn(32, DimensionId.OVERWORLD).size());
+        assertTrue(
+            StructureIndex.StructureType.availableIn(32, DimensionId.OVERWORLD)
+                .contains(StructureIndex.StructureType.ABANDONED_CAMP));
     }
 
     @Test
     void catalogUsesPinnedCubiomesStructureOrdinals() {
         assertEquals(5, StructureIndex.StructureType.VILLAGE.nativeId());
         assertEquals(8, StructureIndex.StructureType.OCEAN_MONUMENT.nativeId());
-        assertEquals(20, StructureIndex.StructureType.END_CITY.nativeId());
-        assertEquals(25, StructureIndex.StructureType.STRONGHOLD.nativeId());
-        assertEquals(26, StructureIndex.StructureType.NETHER_FOSSIL.nativeId());
+        assertEquals(20, StructureIndex.StructureType.NETHER_FOSSIL.nativeId());
+        assertEquals(21, StructureIndex.StructureType.END_CITY.nativeId());
+        assertEquals(26, StructureIndex.StructureType.ABANDONED_CAMP.nativeId());
+        assertEquals(27, StructureIndex.StructureType.STRONGHOLD.nativeId());
     }
 
     @Test

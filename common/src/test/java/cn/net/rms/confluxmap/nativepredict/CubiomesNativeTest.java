@@ -37,14 +37,14 @@ class CubiomesNativeTest {
     private static final int END = 1;
     /** cubiomes {@code enum StructureType} ordinal for Village at this pinned commit. */
     private static final int VILLAGE = 5;
-    private static final int END_CITY = 20;
-    private static final int STRONGHOLD = 25;
-    private static final int NETHER_FOSSIL = 26;
+    private static final int END_CITY = 21;
+    private static final int STRONGHOLD = 27;
+    private static final int NETHER_FOSSIL = 20;
     private static final int[] LEGACY_OVERWORLD_STRUCTURES = {
         1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 15, STRONGHOLD
     };
     private static final int[] MODERN_OVERWORLD_STRUCTURES = {
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 23, 24, STRONGHOLD
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 24, 25, STRONGHOLD
     };
     private static final int[] MODERN_NETHER_STRUCTURES = {12, 18, 19, NETHER_FOSSIL};
 
@@ -515,13 +515,13 @@ class CubiomesNativeTest {
     void nearestSearchCoversEverySupportedVanillaStructureFamily() {
         assertEveryStructureCanBeLocated(mc17(), OVERWORLD, LEGACY_OVERWORLD_STRUCTURES);
         assertEveryStructureCanBeLocated(mc17(), NETHER, MODERN_NETHER_STRUCTURES);
-        assertEveryStructureCanBeLocated(mc17(), END, new int[] {20});
+        assertEveryStructureCanBeLocated(mc17(), END, new int[] {END_CITY});
         assertEveryStructureCanBeLocated(mc261(), OVERWORLD, MODERN_OVERWORLD_STRUCTURES);
         assertEveryStructureCanBeLocated(mc261(), NETHER, MODERN_NETHER_STRUCTURES);
-        assertEveryStructureCanBeLocated(mc261(), END, new int[] {20});
+        assertEveryStructureCanBeLocated(mc261(), END, new int[] {END_CITY});
         assertEveryStructureCanBeLocated(mc262(), OVERWORLD, MODERN_OVERWORLD_STRUCTURES);
         assertEveryStructureCanBeLocated(mc262(), NETHER, MODERN_NETHER_STRUCTURES);
-        assertEveryStructureCanBeLocated(mc262(), END, new int[] {20});
+        assertEveryStructureCanBeLocated(mc262(), END, new int[] {END_CITY});
     }
 
     private static void assertEveryStructureCanBeLocated(

@@ -18,6 +18,12 @@ class McVersionsTest {
     }
 
     @Test
+    void minecraft263UsesItsPinnedCubiomesGenerator() {
+        assertEquals(32, McVersions.toCubiomes("26.3").orElseThrow());
+        assertEquals(32, McVersions.toCubiomes("26.3.1").orElseThrow());
+    }
+
+    @Test
     void playerSelectionsResolvePatchVersionsToTheirWorldgenFamily() {
         final int version117 = McVersions.selectionIndex("1.17");
         assertEquals("1.17-1.17.1", McVersions.selections().get(version117).label());

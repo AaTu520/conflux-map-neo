@@ -41,7 +41,15 @@ final List<String> nativeSources = [
     'native/cubiomes/generator.c',
     'native/cubiomes/layers.c',
     'native/cubiomes/noise.c',
+    'native/cubiomes/terrainnoise.c',
     'native/cubiomes/finders.c',
+    // The upstream header split moved the end-city/fortress/camp piece
+    // generators out of finders.c into features/. finders.c calls them
+    // directly, so they are hard link dependencies, unlike stronghold.c
+    // below (error-path only).
+    'native/cubiomes/features/end_city.c',
+    'native/cubiomes/features/fortress.c',
+    'native/cubiomes/features/abandoned_camp.c',
     'native/cubiomes/terrain_features.c',
     // finders.c calls struct2str (util.c) on a loot-table error path and
     // getStrongholdLoot (features/stronghold.c) from getStructureLoot. The shim

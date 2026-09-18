@@ -1,50 +1,54 @@
-upstream: https://github.com/Cubitect/cubiomes
+upstream: https://github.com/Cubitect/cubiomes (active line: xpple/cubiomes master)
 fork:     https://github.com/Conflux-Union/cubiomes (this project's fork)
-commit:   ee426009a59685c42fa7994c4b40d90f97636b9f
-commit date: 2026-09-05T13:36:45+08:00
+commit:   f75f0a360e9ba3630478eecd0d5935f913e00ef9
+commit date: 2026-09-18T20:38:49+08:00
 pinned via: native/cubiomes git submodule (converted from a vendored copy on 2026-07-17)
 license: MIT (see native/cubiomes/LICENSE)
 
-Fork contents on top of upstream master (e61f905):
-  - 32a7299 "add 1.17 terrain feature queries" (this project's own addition)
-  - da00a4a merge of upstream PR #162 (Zes-MinKey-Young), which adds the
-    MC_1_21_5 biome tree. Upstream has been dormant since 2024-11, so the
-    1.21.5+ worldgen support only exists as an open PR. Verified before
-    merging: over 20 seeds x 512x512 biome cells, the 1.21.4 and 1.21.5
-    generators differ in 0.011% of cells and every single difference is
-    dark_forest -> pale_garden, matching the 25w02a changelog.
-  - 071ca34 "generate modern overworld surfaces" (this project's own
-    addition), which ports the 1.18+ terrain density, cave, surface-height,
-    and surface-biome sampling needed by the built-in predictor.
-  - e97dcf9 "resolve overworld surface columns" (this project's own addition),
-    which adds block-scale 1.17.1 density interpolation, exact 1.21+ terrain
-    interpolation, and versioned default-fluid/aquifer surface resolution.
-  - 7580437 "predict modern vegetation candidates" (this project's own
-    addition), which adds the 1.21.1 vegetation-step Xoroshiro stream, placed-
-    feature profiles, surface-biome placement checks, and bamboo candidates.
-  - 408c419 merge of https://github.com/xpple/cubiomes (MIT), the community
-    fork that carries post-1.21.3 worldgen now that upstream is dormant. It
-    adds MC_1_21_6/9/11, MC_26_1 and MC_26_2. 26.1 is a pure passthrough of
-    1.21.11 worldgen; 26.2 adds tables/btree262.h and the sulfur_caves biome.
-    Verified before merging: output-identical to the pre-merge tree across
-    MC 1.17.1-1.21.5 x 5 seeds for biomes (scale 1 and 4, all three
-    dimensions), mapApproxHeight, structure positions and viability,
-    mapOverworldSurfaceColumns, and the natural tree/structure queries.
-  - 9afc103 "locate nether fossils" (this project's own addition), which adds
-    the Vanilla 1.16+ Nether-fossil structure-set placement and soul-sand-valley
-    viability rule used by the complete structure catalog.
+Merge state: fork master = upstream xpple/master (5815e4f "Add 26.3 support
+(#29)") merged on top of our feature line. Upstream changes folded in:
+the renderpearl-independent C-side terrain refactor (terrainnoise/carver
+split, uint8_t block columns), loot salt configs, the ctest suite, and
+MC_26_3 (btree263 biome tree, abandoned camps).
 
-  - ee42600 "validate nether fossil terrain and anchor biomes", which adds
-    the default Nether base-column landing check for 1.17.1 through 26.2
-    and the versioned anchor-biome and sea-level rules.
+Fork contents kept on top of upstream master:
+  - 32a7299 "add 1.17 terrain feature queries" (this project's own addition)
+  - da00a4a merge of upstream PR #162 (Zes-MinKey-Young), the MC_1_21_5
+    biome tree. Verified before merging: over 20 seeds x 512x512 biome
+    cells, the 1.21.4 and 1.21.5 generators differ in 0.011% of cells and
+    every difference is dark_forest -> pale_garden, matching 25w02a.
+  - 071ca34/e97dcf9/7580437 "modern overworld surfaces / surface columns /
+    vegetation candidates" (this project's own additions) behind
+    mapOverworldSurfaceColumns / mapOverworldSurfaceBiome /
+    getChunkNaturalTreeCandidates.
+  - Nether fossils: upstream 32f6624 now ships its own terrain-validated
+    fossil model, so the fork keeps only what upstream lacks - the
+    getFeaturePos routing in getStructurePos (upstream leaves fossils
+    unplaced; the shim's structure catalog depends on the anchor-chunk
+    contract) and the versioned anchor-biome rule in isViableStructurePos.
+  - StructureType enum order follows upstream (Nether_Fossil=20,
+    Abandoned_Camp=26, Stronghold=27); StructureIndex in the parent repo
+    pins the same ordinals.
+
+Verification for this pin (2026-09-18):
+  - upstream ctest suite (test_biomes/structures/loot/pieces/carvers)
+    passes, including the MC_26_3 cases
+  - the fork's feature_tests harness passes
+  - C smoke: MC_26_3 biome sampling, nether-fossil locate+viability, and
+    abandoned-camp locate all work through the merged library
+  - conflux-map :common:test (1068 tests incl. the 1.7-26.2 native
+    oracle suite against this pin's prebuilt linux-x86_64 library) passes
 
 Files compiled from this commit by buildNativesHost/buildNativesAll
 (selected subset):
   biomenoise.c/h, biomes.c/h, generator.c/h, layers.c/h, noise.c/h,
-  finders.c/h, terrain_features.c/h, rng.h, tables/btree18.h, tables/btree192.h,
-  tables/btree19.h, tables/btree20.h, tables/btree21wd.h, tables/btree215.h,
-  tables/btree262.h
+  terrainnoise.c/h, finders.c/h, terrain_features.c/h, util.c/h, rng.h,
+  features/end_city.c/h, features/fortress.c/h,
+  features/abandoned_camp.c/h, features/stronghold.c/h,
+  tables/btree18.h, tables/btree192.h, tables/btree19.h,
+  tables/btree20.h, tables/btree21wd.h, tables/btree215.h,
+  tables/btree262.h, tables/btree263.h
 
 Not compiled (utilities/tests/docs present in the submodule but unused by
-this project): quadbase.c/h, util.c/h, tests.c, feature_tests.c, terrainnoise.c/h,
-xradv.c, xrms.h, features/, loot/, docs/, CMakeLists.txt.
+this project): quadbase.c/h, xradv.c, carver.c/h, tests.c, tests/,
+feature_tests.c, loot/, docs/, CMakeLists.txt.

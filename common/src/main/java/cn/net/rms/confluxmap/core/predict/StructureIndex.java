@@ -32,6 +32,7 @@ import org.apache.logging.log4j.Logger;
 public final class StructureIndex {
     private static final Logger LOGGER = LogManager.getLogger("ConfluxMap/StructureIndex");
     private static final int MC_1_17_1 = 21;
+    private static final int MC_26_3 = 32;
     private static final String CACHE_PREFIX = "structures_v4_mc";
     private static final int MAX_CANDIDATE_QUERY_REGIONS = 1_024;
 
@@ -53,11 +54,12 @@ public final class StructureIndex {
         MINESHAFT(15, "mineshaft", "MS", 1, 1, DimensionId.OVERWORLD, MC_1_17_1, 1.0),
         FORTRESS(18, "fortress", "FO", 27, 27, DimensionId.NETHER, MC_1_17_1, 16.0),
         BASTION_REMNANT(19, "bastion_remnant", "BA", 27, 27, DimensionId.NETHER, MC_1_17_1, 16.0),
-        END_CITY(20, "end_city", "EC", 20, 20, DimensionId.END, MC_1_17_1, 16.0),
-        TRAIL_RUINS(23, "trail_ruins", "TR", 34, 34, DimensionId.OVERWORLD, 25, 16.0),
-        TRIAL_CHAMBERS(24, "trial_chambers", "TC", 34, 34, DimensionId.OVERWORLD, 26, 16.0),
-        STRONGHOLD(25, "stronghold", "ST", 0, 0, DimensionId.OVERWORLD, MC_1_17_1, 16.0),
-        NETHER_FOSSIL(26, "nether_fossil", "NF", 2, 2, DimensionId.NETHER, MC_1_17_1, 4.0);
+        NETHER_FOSSIL(20, "nether_fossil", "NF", 2, 2, DimensionId.NETHER, MC_1_17_1, 4.0),
+        END_CITY(21, "end_city", "EC", 20, 20, DimensionId.END, MC_1_17_1, 16.0),
+        TRAIL_RUINS(24, "trail_ruins", "TR", 34, 34, DimensionId.OVERWORLD, 25, 16.0),
+        TRIAL_CHAMBERS(25, "trial_chambers", "TC", 34, 34, DimensionId.OVERWORLD, 26, 16.0),
+        ABANDONED_CAMP(26, "abandoned_camp", "CA", 37, 37, DimensionId.OVERWORLD, MC_26_3, 16.0),
+        STRONGHOLD(27, "stronghold", "ST", 0, 0, DimensionId.OVERWORLD, MC_1_17_1, 16.0);
 
         private final int nativeId;
         private final String id;
