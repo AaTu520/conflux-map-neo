@@ -319,11 +319,22 @@ class ChunkSummarizerTest {
     @Test
     void clearMapColorFallsBackToTheHeuristic() {
         final SummaryCodec.Column column = new ChunkSummarizer(name -> 0)
-            .summarize(oceanChunk("minecraft:glass"))
+            .summarize(oceanChunk("minecraft:dirt"))
             .columns()[0];
 
         assertEquals(SurfaceKind.LAND.ordinal(), column.kind());
         assertEquals(1, column.mapColorId());
+    }
+
+    @Test
+    void glassOverTheOceanDescendsToTheWaterSurfaceWithAGlassOverlay() {
+        final SummaryCodec.Column column = new ChunkSummarizer(name -> 0)
+            .summarize(oceanChunk("minecraft:glass"))
+            .columns()[0];
+
+        assertEquals(SurfaceKind.WATER.ordinal(), column.kind());
+        assertEquals(12, column.mapColorId());
+        assertEquals("minecraft:glass", column.overlayMaterialId());
     }
 
     @Test

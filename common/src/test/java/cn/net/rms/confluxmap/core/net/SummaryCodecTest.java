@@ -52,6 +52,27 @@ class SummaryCodecTest {
         assertEquals("minecraft:glowstone", decoded.chunks()[0].columns()[0].floorMaterialId());
     }
 
+    @Test
+    void roundTripPreservesOverlayMaterials() throws Exception {
+        final SummaryCodec.Chunk[] chunks = new SummaryCodec.Chunk[SummaryCodec.CHUNKS];
+        Arrays.fill(chunks, SummaryCodec.Chunk.empty());
+        final SummaryCodec.Column[] columns = new SummaryCodec.Column[SummaryCodec.COLUMNS];
+        Arrays.fill(columns, new SummaryCodec.Column(
+            1, 63, 0, 1, 0, 255, 7,
+            "minecraft:snow_block", "", "minecraft:black_stained_glass"
+        ));
+        chunks[0] = new SummaryCodec.Chunk(true, 1L, columns);
+
+        final SummaryCodec.Region decoded = SummaryCodec.decode(SummaryCodec.encode(
+            new SummaryCodec.Region(0, 0, 1L, chunks)
+        ));
+
+        assertEquals(
+            "minecraft:black_stained_glass",
+            decoded.chunks()[0].columns()[0].overlayMaterialId()
+        );
+    }
+
     /**
      * Coarse presence answers read the flags of hundreds of regions per tile, so they must not pay
      * for the column body. Feeding a header-only prefix proves the body is never touched.

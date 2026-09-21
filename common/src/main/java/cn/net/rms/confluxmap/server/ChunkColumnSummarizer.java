@@ -72,20 +72,38 @@ public final class ChunkColumnSummarizer {
         final int groundY = source.motionBlockingHeight(x, z) - 1;
         int surfaceY = groundY;
         BlockInfo surface = blockAt(source, x, groundY, z);
-        int fluidSurfaceY = groundY;
+        String overlayMaterial = "";
+        String descentTop = null;
+        int descentTopY = groundY;
+        while (surfaceY > source.bottomY()
+            && isLightPermeableCover(source.blockNameAt(x, surfaceY, z))) {
+            if (descentTop == null) {
+                descentTop = source.blockNameAt(x, surfaceY, z);
+                descentTopY = surfaceY;
+            }
+            surfaceY--;
+            surface = blockAt(source, x, surfaceY, z);
+        }
+        int fluidSurfaceY = surfaceY;
         BlockInfo fluidSurface = surface;
         boolean promotedFluidCover = false;
-        final String coverName = source.blockNameAt(x, groundY + 1, z);
-        final SurfaceKind coverFluid = source.fluidKindAt(x, groundY + 1, z);
-        if (coverFluid == SurfaceKind.WATER || coverFluid == SurfaceKind.LAVA) {
-            surfaceY++;
-            surface = blockAt(source, x, surfaceY, z);
-            fluidSurfaceY = surfaceY;
-            fluidSurface = surface;
-            promotedFluidCover = true;
-        } else if (isSurfaceCover(coverName)) {
-            surfaceY++;
-            surface = classify(coverName, mapColors);
+        if (descentTop != null) {
+            overlayMaterial = source.materialIdAt(x, descentTopY, z);
+        } else {
+            final String coverName = source.blockNameAt(x, groundY + 1, z);
+            final SurfaceKind coverFluid = source.fluidKindAt(x, groundY + 1, z);
+            if (coverFluid == SurfaceKind.WATER || coverFluid == SurfaceKind.LAVA) {
+                surfaceY++;
+                surface = blockAt(source, x, surfaceY, z);
+                fluidSurfaceY = surfaceY;
+                fluidSurface = surface;
+                promotedFluidCover = true;
+            } else if (isSurfaceCover(coverName)) {
+                surfaceY++;
+                surface = classify(coverName, mapColors);
+            } else if (isOverlayDecoration(source, x, groundY + 1, z, coverName)) {
+                overlayMaterial = source.materialIdAt(x, groundY + 1, z);
+            }
         }
         final int biome = source.biomeIdAt(x, surfaceY, z);
         final boolean hasFluid = fluidSurface.kind == SurfaceKind.WATER
@@ -119,7 +137,8 @@ public final class ChunkColumnSummarizer {
             floorColor,
             clampLight(source.blockLightAbove(x, surfaceY, z)),
             materialId(surface.kind, source.materialIdAt(x, surfaceY, z)),
-            floorMaterial
+            floorMaterial,
+            overlayMaterial
         );
     }
 
@@ -224,6 +243,43 @@ public final class ChunkColumnSummarizer {
     private static boolean isSurfaceCover(final String name) {
         return "minecraft:snow".equals(name) || "minecraft:powder_snow".equals(name)
             || name != null && name.endsWith("_carpet");
+    }
+
+    /**
+     * Motion-blocking blocks that do not stop light, so the surface a viewer actually sees is
+     * the one beneath them. Deliberately the glass family only: tinted glass blocks light
+     * (opacity 15) and must remain the surface, and other translucent shapes (slabs, stairs)
+     * stay with the heightmap so this name-based approximation never over-descends. The client's
+     * authoritative floor scan treats the same blocks as transparent overlays.
+     */
+    private static boolean isLightPermeableCover(final String name) {
+        if (name == null || name.endsWith("tinted_glass")) {
+            return false;
+        }
+        return "minecraft:glass".equals(name) || name.endsWith("_stained_glass")
+            || "minecraft:glass_pane".equals(name) || name.endsWith("_stained_glass_pane");
+    }
+
+    /**
+     * Non-colliding decoration standing on the surface (flowers, roses, mushrooms, fire, ...)
+     * worth reporting as an overlay so the synced map composites it like the client does.
+     * Bulk foliage (the grass family) is excluded: its tint is visually absorbed by the block
+     * beneath it, and it would turn most vegetated columns into patch records.
+     */
+    private static boolean isOverlayDecoration(
+        final ChunkColumnSource source,
+        final int x,
+        final int y,
+        final int z,
+        final String name
+    ) {
+        if (name == null || name.endsWith("air")) {
+            return false;
+        }
+        if (source.fluidKindAt(x, y, z) != SurfaceKind.UNKNOWN) {
+            return false;
+        }
+        return !name.contains("grass") && !name.contains("fern");
     }
 
     private static int clamp(final int value) {

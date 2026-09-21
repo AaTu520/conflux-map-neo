@@ -27,7 +27,8 @@ import java.util.zip.Inflater;
  * read; {@code difference[pixel]} is implicit in the sample mask.
  */
 public final class PatchCodec {
-    public static final int FORMAT_VERSION = 5;
+    public static final int FORMAT_VERSION = 6;
+    public static final int MATERIAL_FORMAT_VERSION = 5;
     public static final int SOURCE_LIGHT_FORMAT_VERSION = 4;
     public static final int LEGACY_FORMAT_VERSION = 3;
     public static final int PIXELS = 256 * 256;
@@ -101,6 +102,24 @@ public final class PatchCodec {
             ));
         }
 
+        public Sample(
+            final int pixelIndex,
+            final int biomeId,
+            final int surfaceY,
+            final int kind,
+            final int mapColorId,
+            final int fluidDepth,
+            final int floorMapColorId,
+            final String materialId,
+            final String floorMaterialId,
+            final String overlayMaterialId
+        ) {
+            this(pixelIndex, new MapPixel(
+                biomeId, surfaceY, kind, mapColorId, fluidDepth, floorMapColorId,
+                materialId, floorMaterialId, overlayMaterialId
+            ));
+        }
+
         public int biomeId() {
             return pixel.biomeId();
         }
@@ -131,6 +150,10 @@ public final class PatchCodec {
 
         public String floorMaterialId() {
             return pixel.floorMaterialId();
+        }
+
+        public String overlayMaterialId() {
+            return pixel.overlayMaterialId();
         }
     }
 
@@ -244,6 +267,10 @@ public final class PatchCodec {
         return encode(patch, FORMAT_VERSION);
     }
 
+    public static byte[] encodeMaterial(final Patch patch) {
+        return encode(patch, MATERIAL_FORMAT_VERSION);
+    }
+
     public static byte[] encodeLegacy(final Patch patch) {
         return encode(patch, LEGACY_FORMAT_VERSION);
     }
@@ -296,8 +323,8 @@ public final class PatchCodec {
             for (final Sample sample : ordered) {
                 out.writeByte(sample.floorMapColorId());
             }
-            if (formatVersion >= FORMAT_VERSION) {
-                final Map<String, Integer> materials = materialTable(ordered);
+            final Map<String, Integer> materials = materialTable(ordered);
+            if (formatVersion >= MATERIAL_FORMAT_VERSION) {
                 out.writeShort(materials.size());
                 for (final String material : materials.keySet()) {
                     writeMaterial(out, material);
@@ -307,6 +334,11 @@ public final class PatchCodec {
                 }
                 for (final Sample sample : ordered) {
                     out.writeShort(materials.get(sample.floorMaterialId()));
+                }
+            }
+            if (formatVersion >= FORMAT_VERSION) {
+                for (final Sample sample : ordered) {
+                    out.writeShort(materials.get(sample.overlayMaterialId()));
                 }
             }
             if (formatVersion >= SOURCE_LIGHT_FORMAT_VERSION) {
@@ -356,8 +388,8 @@ public final class PatchCodec {
         try {
             final DataInputStream in = new DataInputStream(new ByteArrayInputStream(raw));
             final int version = in.readUnsignedByte();
-            if (version != FORMAT_VERSION && version != SOURCE_LIGHT_FORMAT_VERSION
-                && version != LEGACY_FORMAT_VERSION) {
+            if (version != FORMAT_VERSION && version != MATERIAL_FORMAT_VERSION
+                && version != SOURCE_LIGHT_FORMAT_VERSION && version != LEGACY_FORMAT_VERSION) {
                 throw new ProtoException("unsupported patch body version " + version);
             }
             final byte[] evaluated = readSparseMask(in);
@@ -392,12 +424,18 @@ public final class PatchCodec {
             final int[] floorMapColors = readUnsignedBytePlane(in, count);
             final String[] materialIds = new String[count];
             final String[] floorMaterialIds = new String[count];
+            final String[] overlayMaterialIds = new String[count];
             java.util.Arrays.fill(materialIds, "");
             java.util.Arrays.fill(floorMaterialIds, "");
-            if (version >= FORMAT_VERSION) {
-                final String[] materials = readMaterialTable(in);
+            java.util.Arrays.fill(overlayMaterialIds, "");
+            String[] materials = new String[] {""};
+            if (version >= MATERIAL_FORMAT_VERSION) {
+                materials = readMaterialTable(in);
                 readMaterialPlane(in, materials, materialIds);
                 readMaterialPlane(in, materials, floorMaterialIds);
+            }
+            if (version >= FORMAT_VERSION) {
+                readMaterialPlane(in, materials, overlayMaterialIds);
             }
             final long[] sourceRevisions = unknownRevisions();
             final byte[] blockLight = new byte[PIXELS];
@@ -435,7 +473,8 @@ public final class PatchCodec {
                     fluidDepths[i],
                     floorMapColors[i],
                     materialIds[i],
-                    floorMaterialIds[i]
+                    floorMaterialIds[i],
+                    overlayMaterialIds[i]
                 ));
             }
             return new Patch(evaluated, samples, sourceRevisions, blockLight);
@@ -469,6 +508,7 @@ public final class PatchCodec {
         for (final Sample sample : samples) {
             addMaterial(result, sample.materialId());
             addMaterial(result, sample.floorMaterialId());
+            addMaterial(result, sample.overlayMaterialId());
         }
         return result;
     }

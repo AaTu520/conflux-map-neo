@@ -79,7 +79,8 @@ public final class ChunkSummarizer {
                 surface.kind == SurfaceKind.WATER ? "minecraft:water"
                     : surface.kind == SurfaceKind.LAVA ? "minecraft:lava"
                     : sample.surfaceBlock(),
-                sample.fluidDepth() == 0 ? "" : sample.floorBlock()
+                sample.fluidDepth() == 0 ? "" : sample.floorBlock(),
+                sample.overlayBlock() == null ? "" : sample.overlayBlock()
             );
         }
         return new SummaryCodec.SampledChunk(

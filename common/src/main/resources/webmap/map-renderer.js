@@ -273,7 +273,7 @@ export function createMapRenderer(manifest) {
     const raw = new Uint8Array(await new Response(stream).arrayBuffer());
     const reader = new Reader(raw);
     const version = reader.u8();
-    if (version < 3 || version > 5) throw new Error(`unsupported tile codec ${version}`);
+    if (version < 3 || version > 6) throw new Error(`unsupported tile codec ${version}`);
     const evaluated = readSparseTileMask(reader);
     const difference = readSparseTileMask(reader);
     const indexes = bits(difference);
@@ -291,6 +291,7 @@ export function createMapRenderer(manifest) {
     const floorColors = reader.bytes(count);
     const materialIds = new Array(count).fill('');
     const floorMaterialIds = new Array(count).fill('');
+    const overlayMaterialIds = new Array(count).fill('');
     if (version >= 5) {
       const decoder = new TextDecoder();
       const materials = new Array(reader.u16());
@@ -299,6 +300,9 @@ export function createMapRenderer(manifest) {
       }
       readMaterialPlane(reader, materials, materialIds);
       readMaterialPlane(reader, materials, floorMaterialIds);
+      if (version >= 6) {
+        readMaterialPlane(reader, materials, overlayMaterialIds);
+      }
     }
     const lights = new Uint8Array(256 * 256);
     if (version >= 4) {
@@ -308,7 +312,7 @@ export function createMapRenderer(manifest) {
     }
     return {
       width: 256, height: 256, indexes, biomes, heights, kinds, colors, fluids,
-      floorColors, materialIds, floorMaterialIds, lights
+      floorColors, materialIds, floorMaterialIds, overlayMaterialIds, lights
     };
   }
 

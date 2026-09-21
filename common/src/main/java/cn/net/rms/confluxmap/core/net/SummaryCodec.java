@@ -31,11 +31,13 @@ public final class SummaryCodec {
      * Version 10 invalidates summaries produced before native block-light parity. Version 11 adds
      * surface and submerged-floor material identities for client-resource colour sampling.
      * Version 12 invalidates summaries that stored carpets only as their supporting block.
+     * Version 13 descends through light-permeable glass-family blocks and carries the overlay
+     * material identity (glass tint or surface decoration) for each column.
      */
-    public static final int FORMAT_VERSION = 12;
+    public static final int FORMAT_VERSION = 13;
     public static final int CHUNKS = 256;
     public static final int COLUMNS = 256;
-    public static final int RECORD_BYTES = 12;
+    public static final int RECORD_BYTES = 14;
     public static final int MAX_MATERIALS = 1_024;
     public static final int MAX_MATERIAL_BYTES = 256;
     public static final int MAX_RAW_BYTES = CHUNKS * COLUMNS * RECORD_BYTES
@@ -53,18 +55,37 @@ public final class SummaryCodec {
         int floorMapColorId,
         int blockLight,
         String materialId,
-        String floorMaterialId
+        String floorMaterialId,
+        String overlayMaterialId
     ) {
         public Column {
             new MapPixel(
                 biomeId, surfaceY, kind, mapColorId, fluidDepth, floorMapColorId,
-                materialId, floorMaterialId
+                materialId, floorMaterialId, overlayMaterialId
             );
             if (blockLight < 0 || blockLight > 15) {
                 throw new IllegalArgumentException("block light outside 0..15: " + blockLight);
             }
             materialId = materialId == null ? "" : materialId;
             floorMaterialId = floorMaterialId == null ? "" : floorMaterialId;
+            overlayMaterialId = overlayMaterialId == null ? "" : overlayMaterialId;
+        }
+
+        public Column(
+            final int biomeId,
+            final int surfaceY,
+            final int kind,
+            final int mapColorId,
+            final int fluidDepth,
+            final int floorMapColorId,
+            final int blockLight,
+            final String materialId,
+            final String floorMaterialId
+        ) {
+            this(
+                biomeId, surfaceY, kind, mapColorId, fluidDepth, floorMapColorId,
+                blockLight, materialId, floorMaterialId, ""
+            );
         }
 
         public Column(
@@ -78,7 +99,7 @@ public final class SummaryCodec {
         ) {
             this(
                 biomeId, surfaceY, kind, mapColorId, fluidDepth, floorMapColorId,
-                blockLight, "", ""
+                blockLight, "", "", ""
             );
         }
 
@@ -92,7 +113,7 @@ public final class SummaryCodec {
         ) {
             this(
                 biomeId, surfaceY, kind, mapColorId, fluidDepth, floorMapColorId,
-                0, "", ""
+                0, "", "", ""
             );
         }
 
@@ -105,14 +126,14 @@ public final class SummaryCodec {
         ) {
             this(
                 biomeId, surfaceY, kind, mapColorId, fluidDepth,
-                MapPixel.MAP_COLOR_NONE, 0, "", ""
+                MapPixel.MAP_COLOR_NONE, 0, "", "", ""
             );
         }
 
         public MapPixel pixel() {
             return new MapPixel(
                 biomeId, surfaceY, kind, mapColorId, fluidDepth, floorMapColorId,
-                materialId, floorMaterialId
+                materialId, floorMaterialId, overlayMaterialId
             );
         }
     }
@@ -269,6 +290,7 @@ public final class SummaryCodec {
                 columns.writeByte(column.blockLight());
                 columns.writeShort(materials.get(column.materialId()));
                 columns.writeShort(materials.get(column.floorMaterialId()));
+                columns.writeShort(materials.get(column.overlayMaterialId()));
             }
         }
         columns.flush();
@@ -417,6 +439,7 @@ public final class SummaryCodec {
         final int surfaceY = (short) (((raw[offset + 1] & 255) << 8) | (raw[offset + 2] & 255));
         final int material = unsignedShort(raw, offset + 8);
         final int floorMaterial = unsignedShort(raw, offset + 10);
+        final int overlayMaterial = unsignedShort(raw, offset + 12);
         return new Column(
             raw[offset] & 255,
             surfaceY,
@@ -426,7 +449,8 @@ public final class SummaryCodec {
             raw[offset + 6] & 255,
             raw[offset + 7] & 255,
             materialAt(materials, material),
-            materialAt(materials, floorMaterial)
+            materialAt(materials, floorMaterial),
+            materialAt(materials, overlayMaterial)
         );
     }
 
@@ -437,6 +461,7 @@ public final class SummaryCodec {
             in.readUnsignedByte(), in.readShort(), in.readUnsignedByte(),
             in.readUnsignedByte(), in.readUnsignedByte(), in.readUnsignedByte(),
             in.readUnsignedByte(), materialAt(materials, in.readUnsignedShort()),
+            materialAt(materials, in.readUnsignedShort()),
             materialAt(materials, in.readUnsignedShort())
         );
     }
@@ -454,6 +479,7 @@ public final class SummaryCodec {
                 }
                 addMaterial(result, column.materialId());
                 addMaterial(result, column.floorMaterialId());
+                addMaterial(result, column.overlayMaterialId());
             }
         }
         return result;

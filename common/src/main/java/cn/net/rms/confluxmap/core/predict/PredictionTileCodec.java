@@ -38,9 +38,10 @@ public final class PredictionTileCodec {
      * reconstruct from. Version 18 stores enhanced patch bodies with source revisions and light.
      * Version 19 discards corrections that may have been produced by the light-dropping native
      * Anvil scanner. Version 20 records the negotiated correction profile that defines revision
-     * semantics.
+     * semantics. Version 21 stores overlay-carrying patch bodies whose summaries descend through
+     * light-permeable glass.
      */
-    public static final int FORMAT_VERSION = 20;
+    public static final int FORMAT_VERSION = 21;
     private static final int SOURCE_PROFILE_VERSION = 17;
     private static final int CORRECTION_PROFILE_VERSION = 20;
     private static final int OLDEST_READABLE_FORMAT_VERSION = 19;

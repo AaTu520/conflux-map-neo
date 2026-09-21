@@ -195,8 +195,10 @@ public final class PredictedTileComposer {
         final int[] floorColors = new int[size * size];
         final String[] materials = new String[size * size];
         final String[] floorMaterials = new String[size * size];
+        final String[] overlayMaterials = new String[size * size];
         Arrays.fill(materials, "");
         Arrays.fill(floorMaterials, "");
+        Arrays.fill(overlayMaterials, "");
         Arrays.fill(floorColors, MapPixel.MAP_COLOR_NONE);
         final boolean[] corrected = new boolean[size * size];
         if (corrections != null) {
@@ -241,6 +243,7 @@ public final class PredictedTileComposer {
                     floorColors[pixel] = MapPixel.MAP_COLOR_NONE;
                     materials[pixel] = "";
                     floorMaterials[pixel] = "";
+                    overlayMaterials[pixel] = "";
                     corrected[pixel] = false;
                     continue;
                 }
@@ -253,6 +256,7 @@ public final class PredictedTileComposer {
                 floorColors[pixel] = sample.floorMapColorId();
                 materials[pixel] = sample.materialId();
                 floorMaterials[pixel] = sample.floorMaterialId();
+                overlayMaterials[pixel] = sample.overlayMaterialId();
                 corrected[pixel] = true;
             }
         }
@@ -280,7 +284,8 @@ public final class PredictedTileComposer {
                     out[outIdx] = xaeroColor(
                         kind, biomes[idx], fluids[idx], palette, syncedMaterials,
                         corrected[outIdx], colors[outIdx], floorColors[outIdx], baselineMapColorId,
-                        materials[outIdx], floorMaterials[outIdx], grid.blockX(x), grid.blockZ(z),
+                        materials[outIdx], floorMaterials[outIdx], overlayMaterials[outIdx],
+                        grid.blockX(x), grid.blockZ(z),
                         surface, floorSurface, kinds, x, z, lod, xaeroShadow, ambientLightTint
                     );
                     continue;
@@ -316,7 +321,11 @@ public final class PredictedTileComposer {
                     : palette.applyMaterialDetail(
                         kind, biomes[idx], composed, grid.blockX(x), grid.blockZ(z)
                     );
-                final int ambientLit = Argb.multiply(materialDetailed, ambientLightTint);
+                final int overlaid = applyOverlay(
+                    materialDetailed, overlayMaterials[outIdx], biomes[idx], syncedMaterials,
+                    corrected[outIdx], grid.blockX(x), grid.blockZ(z), palette
+                );
+                final int ambientLit = Argb.multiply(overlaid, ambientLightTint);
                 final int heightShaded = ShadingPipeline.applyShade(ambientLit, heightShade);
                 out[outIdx] = ShadingPipeline.applyBrightnessMultiplier(heightShaded, reliefMultiplier);
             }
@@ -336,6 +345,7 @@ public final class PredictedTileComposer {
         final int baselineMapColorId,
         final String materialId,
         final String floorMaterialId,
+        final String overlayMaterialId,
         final int worldX,
         final int worldZ,
         final int[] surface,
@@ -370,8 +380,14 @@ public final class PredictedTileComposer {
                 slopeSampleHeight(floorSurface, kinds, x - 1, z - 1),
                 blocksPerPixel, true, shadow
             );
+            final int waterTop = xaeroHidesOverlay(overlayMaterialId)
+                ? water
+                : applyOverlay(
+                    water, overlayMaterialId, biomeId, syncedMaterials, corrected,
+                    worldX, worldZ, palette
+                );
             return ShadingPipeline.compositeOver(
-                water,
+                waterTop,
                 ShadingPipeline.applyBrightnessMultiplier(
                     shadedFloor, XaeroMapStyle.transparentFloorBrightness(fluidDepth)
                 )
@@ -382,14 +398,58 @@ public final class PredictedTileComposer {
             correctedMapColorId, correctedFloorMapColorId, baselineMapColorId,
             1.0, materialId, floorMaterialId, worldX, worldZ
         );
+        final int overlaid = xaeroHidesOverlay(overlayMaterialId)
+            ? base
+            : applyOverlay(
+                base, overlayMaterialId, biomeId, syncedMaterials, corrected,
+                worldX, worldZ, palette
+            );
         // The ambient bake is part of the deferred-light pixel representation, not a style
         // choice: captured roof tiles carry it, and the light pipeline replaces it later.
         return XaeroMapStyle.applyTerrain(
-            Argb.multiply(base, ambientLightTint), surface[idx],
+            Argb.multiply(overlaid, ambientLightTint), surface[idx],
             slopeSampleHeight(surface, kinds, x, z - 1),
             slopeSampleHeight(surface, kinds, x - 1, z - 1),
             blocksPerPixel, true, shadow
         );
+    }
+
+    /**
+     * Composites the synced overlay material's own resource-pack colour over {@code base},
+     * mirroring the authoritative snapshot's transparent-overlay layer (glass tint over the
+     * descended-to surface, decoration over the surface). A correction without a palette
+     * sample for the overlay leaves the base untouched.
+     */
+    private static int applyOverlay(
+        final int base,
+        final String overlayMaterialId,
+        final int biomeId,
+        final SyncedMaterialPalette syncedMaterials,
+        final boolean corrected,
+        final int worldX,
+        final int worldZ,
+        final PredictionPalette palette
+    ) {
+        if (!corrected || overlayMaterialId == null || overlayMaterialId.isEmpty()
+            || syncedMaterials == null || !syncedMaterials.contains(overlayMaterialId)) {
+            return base;
+        }
+        return Argb.over(
+            syncedMaterials.color(
+                overlayMaterialId, biomeId, Argb.TRANSPARENT, worldX, worldZ, palette
+            ),
+            base
+        );
+    }
+
+    /** Mirrors the client snapshot's {@code isXaeroInvisible}: torches and glass vanish from
+     *  the Xaero-style overlay, so that style shows the surface beneath them. */
+    private static boolean xaeroHidesOverlay(final String overlayMaterialId) {
+        if (overlayMaterialId == null || overlayMaterialId.isEmpty()) {
+            return false;
+        }
+        return overlayMaterialId.endsWith("torch") || overlayMaterialId.endsWith("glass")
+            || overlayMaterialId.endsWith("glass_pane");
     }
 
     /** One column's colour before height shading and relief. */

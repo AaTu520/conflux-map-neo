@@ -4,7 +4,7 @@ package cn.net.rms.confluxmap.nativepredict;
 public final class NativeChunkNbtScanner {
     private static final int NUMERIC_HEADER = 1;
     private static final int NUMERIC_FIELDS = 4;
-    private static final int STRING_FIELDS = 3;
+    private static final int STRING_FIELDS = 4;
 
     public record Sample(
         int biomeId,
@@ -14,7 +14,8 @@ public final class NativeChunkNbtScanner {
         int fluidDepth,
         int blockLight,
         String surfaceBlock,
-        String floorBlock
+        String floorBlock,
+        String overlayBlock
     ) {
     }
 
@@ -71,7 +72,8 @@ public final class NativeChunkNbtScanner {
                 numeric[n + 3],
                 numeric[lightOffset + i],
                 strings[s + 1],
-                strings[s + 2]
+                strings[s + 2],
+                strings[s + 3]
             );
         }
         return new Chunk(true, revision[0], sampleStride, samples);

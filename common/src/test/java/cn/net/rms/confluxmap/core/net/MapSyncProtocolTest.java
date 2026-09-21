@@ -23,7 +23,7 @@ class MapSyncProtocolTest {
         final MapSyncProtocol.ServerHandshake handshake =
             MapSyncProtocol.acceptClient(hello, "0.2.0", PREDICTOR);
 
-        assertEquals(CorrectionProfile.MATERIAL_COLOR_V3, handshake.session().correctionProfile());
+        assertEquals(CorrectionProfile.OVERLAY_V4, handshake.session().correctionProfile());
         assertEquals(NegotiatedMapSync.CorrectionMode.RESIDUAL, handshake.session().correctionMode());
         assertTrue(handshake.session().supports(MapSyncCapability.REGION_CORRECTION));
         assertTrue(handshake.session().supports(MapSyncCapability.SERVER_VIEW_DISTANCE));
@@ -153,8 +153,44 @@ class MapSyncProtocolTest {
         final MapSyncProtocol.ServerHandshake handshake =
             MapSyncProtocol.acceptClient(hello, "0.2.0", PREDICTOR);
 
-        assertEquals(CorrectionProfile.MATERIAL_COLOR_V3, handshake.session().correctionProfile());
+        assertEquals(CorrectionProfile.OVERLAY_V4, handshake.session().correctionProfile());
         assertEquals(NegotiatedMapSync.CorrectionMode.ABSOLUTE, handshake.session().correctionMode());
+    }
+
+    @Test
+    void peerWithoutTheOverlayProfileNegotiatesDownToMaterialColour() {
+        final MapSyncProtocol.ServerHandshake handshake = MapSyncProtocol.acceptClient(
+            new HelloC2S("0.2.0", PREDICTOR + releasedAdvertisement() + overlayFreeOffer()),
+            "0.2.0", PREDICTOR
+        );
+
+        assertEquals(
+            CorrectionProfile.MATERIAL_COLOR_V3, handshake.session().correctionProfile()
+        );
+        assertEquals(NegotiatedMapSync.CorrectionMode.RESIDUAL, handshake.session().correctionMode());
+    }
+
+    /** The legacy token block every released client still appends before its caps2 offer. */
+    private static String releasedAdvertisement() {
+        return "|sync:1|wire:4.0|patch:3|region:1|patch:4|region:2|source-light:1"
+            + "|server-view:1";
+    }
+
+    /** A released pre-overlay client's offer: negotiation v2, profiles {1, 2, 3}, no caps. */
+    private static String overlayFreeOffer() {
+        final java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+        try (final java.io.DataOutputStream out = new java.io.DataOutputStream(bytes)) {
+            out.writeByte(2);
+            out.writeByte(3);
+            out.writeByte(3);
+            out.writeByte(2);
+            out.writeByte(1);
+            out.writeByte(0);
+        } catch (final java.io.IOException e) {
+            throw new IllegalStateException(e);
+        }
+        return "|caps2:" + java.util.Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(bytes.toByteArray());
     }
 
     @Test

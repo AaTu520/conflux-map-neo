@@ -78,6 +78,37 @@ class PatchCodecTest {
     }
 
     @Test
+    void overlayProfileRoundTripsTheOverlayRegistryId() throws Exception {
+        final PatchCodec.Sample sample = new PatchCodec.Sample(
+            42, 1, 63, 0, 3, 0, 255,
+            "minecraft:snow_block", "", "minecraft:black_stained_glass"
+        );
+
+        final PatchCodec.Patch decoded = PatchCodec.decode(PatchCodec.encode(
+            new PatchCodec.Patch(List.of(sample))
+        ));
+
+        assertEquals(
+            "minecraft:black_stained_glass", decoded.sampleAt(42).overlayMaterialId()
+        );
+    }
+
+    @Test
+    void materialDowngradeDropsTheOverlayRegistryId() throws Exception {
+        final PatchCodec.Sample sample = new PatchCodec.Sample(
+            42, 1, 63, 0, 3, 0, 255,
+            "minecraft:snow_block", "", "minecraft:black_stained_glass"
+        );
+
+        final PatchCodec.Patch decoded = PatchCodec.decode(PatchCodec.encodeMaterial(
+            new PatchCodec.Patch(List.of(sample))
+        ));
+
+        assertEquals("minecraft:snow_block", decoded.sampleAt(42).materialId());
+        assertEquals("", decoded.sampleAt(42).overlayMaterialId());
+    }
+
+    @Test
     void sourceLightProfileDropsMaterialIdsButKeepsLighting() throws Exception {
         final byte[] evaluated = new byte[PatchCodec.MASK_BYTES];
         PatchCodec.setEvaluated(evaluated, 42);

@@ -100,6 +100,7 @@ typedef struct {
     int block_light;
     const char *surface_name;
     const char *floor_name;
+    const char *overlay_name;
 } CfxSample;
 
 static const CfxBlockEntry CFX_AIR = { "minecraft:air", 0 };
@@ -748,6 +749,39 @@ static int cfxIsKelp(const char *name) {
         || strcmp(name, "minecraft:kelp_plant") == 0);
 }
 
+static int cfxEndsWith(const char *name, const char *suffix) {
+    if (name == NULL)
+        return 0;
+    const size_t length = strlen(name);
+    const size_t suffix_length = strlen(suffix);
+    return length >= suffix_length
+        && strcmp(name + length - suffix_length, suffix) == 0;
+}
+
+/* Mirrors ChunkColumnSummarizer.isLightPermeableCover: glass-family blocks the column scan
+ * descends through, with tinted glass kept as the surface because it blocks light. */
+static int cfxIsLightPermeable(const char *name) {
+    if (name == NULL)
+        return 0;
+    if (cfxEndsWith(name, "tinted_glass"))
+        return 0;
+    return strcmp(name, "minecraft:glass") == 0
+        || cfxEndsWith(name, "_stained_glass")
+        || strcmp(name, "minecraft:glass_pane") == 0
+        || cfxEndsWith(name, "_stained_glass_pane");
+}
+
+/* Mirrors ChunkColumnSummarizer.isOverlayDecoration: non-colliding surface decoration worth
+ * an overlay, with air/fluid and bulk foliage (grass, fern) excluded. */
+static int cfxIsOverlayDecoration(const CfxBlockEntry *block) {
+    const char *name = block->name;
+    if (name == NULL || cfxEndsWith(name, "air"))
+        return 0;
+    if (block->fluid != 0)
+        return 0;
+    return strstr(name, "grass") == NULL && strstr(name, "fern") == NULL;
+}
+
 static int cfxIsUnderwater(const CfxBlockEntry *block) {
     const char *name = block->name;
     return block->fluid == 1 || cfxContains(name, "bubble_column") || cfxIsKelp(name)
@@ -808,22 +842,38 @@ static int cfxSummarizeSample(
     if (!ok)
         return 0;
     const int ground_y = chunk->bottom_y + height - 1;
-    const CfxBlockEntry *ground = cfxBlockAt(chunk, x, ground_y, z);
-    const CfxBlockEntry *surface = ground;
-    const CfxBlockEntry *fluid_surface = ground;
+    const CfxBlockEntry *surface = cfxBlockAt(chunk, x, ground_y, z);
+    const CfxBlockEntry *fluid_surface = surface;
     int surface_y = ground_y;
     int fluid_surface_y = ground_y;
     int promoted_fluid = 0;
-    const CfxBlockEntry *cover = cfxBlockAt(chunk, x, ground_y + 1, z);
-    if (cover->fluid == 1 || cover->fluid == 2) {
-        surface_y = ground_y + 1;
+    const char *overlay_name = NULL;
+    const char *descent_top = NULL;
+    while (surface_y > chunk->bottom_y
+        && cfxIsLightPermeable(cfxBlockAt(chunk, x, surface_y, z)->name)) {
+        if (descent_top == NULL)
+            descent_top = cfxBlockAt(chunk, x, surface_y, z)->name;
+        surface_y--;
+        surface = cfxBlockAt(chunk, x, surface_y, z);
+        fluid_surface = surface;
         fluid_surface_y = surface_y;
-        surface = cover;
-        fluid_surface = cover;
-        promoted_fluid = 1;
-    } else if (cfxIsSnow(cover->name) || cfxIsCarpet(cover->name)) {
-        surface_y = ground_y + 1;
-        surface = cover;
+    }
+    if (descent_top != NULL) {
+        overlay_name = descent_top;
+    } else {
+        const CfxBlockEntry *cover = cfxBlockAt(chunk, x, ground_y + 1, z);
+        if (cover->fluid == 1 || cover->fluid == 2) {
+            surface_y = ground_y + 1;
+            fluid_surface_y = surface_y;
+            surface = cover;
+            fluid_surface = cover;
+            promoted_fluid = 1;
+        } else if (cfxIsSnow(cover->name) || cfxIsCarpet(cover->name)) {
+            surface_y = ground_y + 1;
+            surface = cover;
+        } else if (cfxIsOverlayDecoration(cover)) {
+            overlay_name = cover->name;
+        }
     }
 
     sample->biome_id = cfxBiomeAt(chunk, x, surface_y, z, &sample->biome_name);
@@ -833,6 +883,7 @@ static int cfxSummarizeSample(
     sample->fluid_depth = 0;
     sample->block_light = cfxBlockLightAt(chunk, x, surface_y + 1, z);
     sample->floor_name = NULL;
+    sample->overlay_name = overlay_name;
 
     const int has_fluid = fluid_surface->fluid == 1 || cfxIsIce(fluid_surface->name);
     if (!has_fluid)
@@ -898,7 +949,7 @@ JNIEXPORT jint JNICALL Java_cn_net_rms_confluxmap_nativepredict_CubiomesNative_c
     const int base_numeric_count = 1 + sample_count * 4;
     const int numeric_capacity = (*env)->GetArrayLength(env, out_numeric);
     if (numeric_capacity < base_numeric_count
-        || (*env)->GetArrayLength(env, out_strings) < sample_count * 3) {
+        || (*env)->GetArrayLength(env, out_strings) < sample_count * 4) {
         return CFX_SCAN_BAD_ARGS;
     }
 
@@ -974,9 +1025,10 @@ JNIEXPORT jint JNICALL Java_cn_net_rms_confluxmap_nativepredict_CubiomesNative_c
     }
     if (!(*env)->ExceptionCheck(env) && generated) {
         for (int i = 0; i < sample_count && !(*env)->ExceptionCheck(env); i++) {
-            cfxSetString(env, out_strings, i * 3, samples[i].biome_name);
-            cfxSetString(env, out_strings, i * 3 + 1, samples[i].surface_name);
-            cfxSetString(env, out_strings, i * 3 + 2, samples[i].floor_name);
+            cfxSetString(env, out_strings, i * 4, samples[i].biome_name);
+            cfxSetString(env, out_strings, i * 4 + 1, samples[i].surface_name);
+            cfxSetString(env, out_strings, i * 4 + 2, samples[i].floor_name);
+            cfxSetString(env, out_strings, i * 4 + 3, samples[i].overlay_name);
         }
     }
 

@@ -37,6 +37,7 @@ public final class SyncedMaterialResolver {
         for (final PatchCodec.Sample sample : samples) {
             register(sample.materialId());
             register(sample.floorMaterialId());
+            register(sample.overlayMaterialId());
         }
     }
 

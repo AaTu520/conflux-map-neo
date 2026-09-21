@@ -53,6 +53,44 @@ class NativeChunkNbtScannerTest {
     }
 
     @Test
+    void descendsThroughGlassAndReportsItAsOverlay() throws IOException {
+        Assumptions.assumeTrue(NativeLib.initForTests(), "native library unavailable");
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (DataOutputStream output = new DataOutputStream(bytes)) {
+            NbtIo.write(generatedChunk("minecraft:black_stained_glass", 2), output);
+        }
+
+        final NativeChunkNbtScanner.Chunk chunk = NativeChunkNbtScanner.scan(
+            bytes.toByteArray(), 4
+        );
+
+        assertNotNull(chunk);
+        assertTrue(chunk.generated());
+        assertEquals(0, chunk.samples()[0].surfaceY());
+        assertEquals("minecraft:stone", chunk.samples()[0].surfaceBlock());
+        assertEquals("minecraft:black_stained_glass", chunk.samples()[0].overlayBlock());
+    }
+
+    @Test
+    void standingDecorationAboveTheSurfaceBecomesTheOverlay() throws IOException {
+        Assumptions.assumeTrue(NativeLib.initForTests(), "native library unavailable");
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (DataOutputStream output = new DataOutputStream(bytes)) {
+            NbtIo.write(generatedChunk("minecraft:wither_rose", 1), output);
+        }
+
+        final NativeChunkNbtScanner.Chunk chunk = NativeChunkNbtScanner.scan(
+            bytes.toByteArray(), 4
+        );
+
+        assertNotNull(chunk);
+        assertTrue(chunk.generated());
+        assertEquals(0, chunk.samples()[0].surfaceY());
+        assertEquals("minecraft:stone", chunk.samples()[0].surfaceBlock());
+        assertEquals("minecraft:wither_rose", chunk.samples()[0].overlayBlock());
+    }
+
+    @Test
     void malformedNbtFailsWithoutEscapingNativeParser() {
         Assumptions.assumeTrue(NativeLib.initForTests(), "native library unavailable");
         final java.util.Random random = new java.util.Random(0xC0FFEE);
@@ -69,6 +107,54 @@ class NativeChunkNbtScannerTest {
 
     private static NbtCompound generatedCarpetChunk() {
         return generatedChunk(true);
+    }
+
+    /**
+     * @param topBlockName palette entry placed at every column of local layer 1
+     * @param motionHeight the stored motion-blocking height: one above layer 0 (the top block is
+     *        a non-colliding decoration above stone) or one above layer 1 (it is a light-permeable
+     *        cover the scan must descend through)
+     */
+    private static NbtCompound generatedChunk(
+        final String topBlockName, final int motionHeight
+    ) {
+        final NbtCompound level = new NbtCompound();
+        level.putString("Status", "full");
+        level.putLong("LastUpdate", 1L);
+
+        final long[] heights = new long[(256 + 6) / 7];
+        long packedOnes = 0L;
+        for (int i = 0; i < 7; i++) {
+            packedOnes |= (long) motionHeight << (i * 9);
+        }
+        Arrays.fill(heights, packedOnes);
+        final NbtCompound heightmaps = new NbtCompound();
+        heightmaps.putLongArray("MOTION_BLOCKING", heights);
+        level.put("Heightmaps", heightmaps);
+        level.putIntArray("Biomes", new int[1_024]);
+
+        final NbtCompound stone = new NbtCompound();
+        stone.putString("Name", "minecraft:stone");
+        final NbtCompound top = new NbtCompound();
+        top.putString("Name", topBlockName);
+        final NbtList palette = new NbtList();
+        palette.add(stone);
+        palette.add(top);
+        final NbtCompound section = new NbtCompound();
+        section.putByte("Y", (byte) 0);
+        section.put("Palette", palette);
+        // 4-bit palette indices, 16 per long: local layer 1 (block indexes 256..511, longs
+        // 16..31) becomes the top block everywhere, layer 0 stays stone (index 0).
+        final long[] states = new long[256];
+        Arrays.fill(states, 16, 32, 0x1111111111111111L);
+        section.putLongArray("BlockStates", states);
+        final NbtList sections = new NbtList();
+        sections.add(section);
+        level.put("Sections", sections);
+
+        final NbtCompound root = new NbtCompound();
+        root.put("Level", level);
+        return root;
     }
 
     private static NbtCompound generatedChunk(final boolean carpetCover) {

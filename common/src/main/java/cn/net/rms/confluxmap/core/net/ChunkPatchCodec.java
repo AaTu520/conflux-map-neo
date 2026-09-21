@@ -19,7 +19,8 @@ import java.util.zip.Inflater;
 
 /** Variable-size authoritative correction codec for one cropped 16x16-chunk region page. */
 public final class ChunkPatchCodec {
-    public static final int FORMAT_VERSION = 3;
+    public static final int FORMAT_VERSION = 4;
+    public static final int MATERIAL_FORMAT_VERSION = 3;
     public static final int SOURCE_LIGHT_FORMAT_VERSION = 2;
     public static final int LEGACY_FORMAT_VERSION = 1;
     public static final int MAX_CHUNKS_PER_SIDE = 16;
@@ -196,6 +197,10 @@ public final class ChunkPatchCodec {
         return encode(patch, FORMAT_VERSION);
     }
 
+    public static byte[] encodeMaterial(final Patch patch) {
+        return encode(patch, MATERIAL_FORMAT_VERSION);
+    }
+
     public static byte[] encodeLegacy(final Patch patch) {
         return encode(patch, LEGACY_FORMAT_VERSION);
     }
@@ -250,8 +255,8 @@ public final class ChunkPatchCodec {
             for (final PatchCodec.Sample sample : ordered) {
                 out.writeByte(sample.floorMapColorId());
             }
-            if (formatVersion >= FORMAT_VERSION) {
-                final Map<String, Integer> materials = materialTable(ordered);
+            final Map<String, Integer> materials = materialTable(ordered);
+            if (formatVersion >= MATERIAL_FORMAT_VERSION) {
                 out.writeShort(materials.size());
                 for (final String material : materials.keySet()) {
                     writeMaterial(out, material);
@@ -261,6 +266,11 @@ public final class ChunkPatchCodec {
                 }
                 for (final PatchCodec.Sample sample : ordered) {
                     out.writeShort(materials.get(sample.floorMaterialId()));
+                }
+            }
+            if (formatVersion >= FORMAT_VERSION) {
+                for (final PatchCodec.Sample sample : ordered) {
+                    out.writeShort(materials.get(sample.overlayMaterialId()));
                 }
             }
             if (formatVersion >= SOURCE_LIGHT_FORMAT_VERSION) {
@@ -329,6 +339,9 @@ public final class ChunkPatchCodec {
                                 hash = fnv1aString(hash, sample.materialId());
                                 hash = fnv1aString(hash, sample.floorMaterialId());
                             }
+                            if (profile.carriesOverlay()) {
+                                hash = fnv1aString(hash, sample.overlayMaterialId());
+                            }
                         }
                     }
                 }
@@ -387,8 +400,8 @@ public final class ChunkPatchCodec {
         try {
             final DataInputStream in = new DataInputStream(new ByteArrayInputStream(raw));
             final int version = in.readUnsignedByte();
-            if (version != FORMAT_VERSION && version != SOURCE_LIGHT_FORMAT_VERSION
-                && version != LEGACY_FORMAT_VERSION) {
+            if (version != FORMAT_VERSION && version != MATERIAL_FORMAT_VERSION
+                && version != SOURCE_LIGHT_FORMAT_VERSION && version != LEGACY_FORMAT_VERSION) {
                 throw new ProtoException("unsupported chunk patch version " + version);
             }
             final int chunkWidth = in.readUnsignedByte();
@@ -435,12 +448,18 @@ public final class ChunkPatchCodec {
             final int[] floorMapColors = readUnsignedBytePlane(in, count);
             final String[] materialIds = new String[count];
             final String[] floorMaterialIds = new String[count];
+            final String[] overlayMaterialIds = new String[count];
             java.util.Arrays.fill(materialIds, "");
             java.util.Arrays.fill(floorMaterialIds, "");
-            if (version >= FORMAT_VERSION) {
-                final String[] materials = readMaterialTable(in);
+            java.util.Arrays.fill(overlayMaterialIds, "");
+            String[] materials = new String[] {""};
+            if (version >= MATERIAL_FORMAT_VERSION) {
+                materials = readMaterialTable(in);
                 readMaterialPlane(in, materials, materialIds);
                 readMaterialPlane(in, materials, floorMaterialIds);
+            }
+            if (version >= FORMAT_VERSION) {
+                readMaterialPlane(in, materials, overlayMaterialIds);
             }
             final long[] sourceRevisions = unknownRevisions(chunks);
             final byte[] blockLight = new byte[pixels];
@@ -468,7 +487,8 @@ public final class ChunkPatchCodec {
             for (int i = 0; i < count; i++) {
                 samples.add(new PatchCodec.Sample(
                     pixelIndexes[i], biomes[i], surfaceYs[i], kinds[i], mapColors[i],
-                    fluidDepths[i], floorMapColors[i], materialIds[i], floorMaterialIds[i]
+                    fluidDepths[i], floorMapColors[i], materialIds[i], floorMaterialIds[i],
+                    overlayMaterialIds[i]
                 ));
             }
             return new Patch(
@@ -492,6 +512,7 @@ public final class ChunkPatchCodec {
         for (final PatchCodec.Sample sample : samples) {
             addMaterial(result, sample.materialId());
             addMaterial(result, sample.floorMaterialId());
+            addMaterial(result, sample.overlayMaterialId());
         }
         return result;
     }
