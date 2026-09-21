@@ -1,7 +1,7 @@
 # Paper companion
 
 The standalone `confluxmap-paper` plugin provides the same public companion protocols as the
-Fabric server entrypoint. One Paper artifact targets Paper 1.21.1 through 26.2. It is deliberately
+Fabric server entrypoint. One Paper artifact targets Paper 1.21.1 through 26.3. It is deliberately
 separate from the version-specific Fabric client artifacts: bundling Bukkit classes into every
 remapped Fabric jar would enlarge every client download and create avoidable class-loading and
 compatibility surfaces.

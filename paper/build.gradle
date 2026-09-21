@@ -21,7 +21,7 @@ dependencies {
     compileOnly 'org.apache.logging.log4j:log4j-api:2.25.3'
     implementation 'io.github.canary-prism:querz-nbt:6.2.1'
     implementation 'org.lz4:lz4-java:1.8.0'
-    latestPaperApi 'io.papermc.paper:paper-api:26.2.build.87-stable'
+    latestPaperApi 'io.papermc.paper:paper-api:26.3.build.30-alpha'
     testImplementation 'io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testRuntimeOnly 'org.apache.logging.log4j:log4j-api:2.25.3'
@@ -89,7 +89,7 @@ tasks.register('checkPaperIsolation') {
 
 tasks.register('compileLatestPaperJava', JavaCompile) {
     group = 'verification'
-    description = 'Compiles the Paper adapter against the newest supported Paper 26.2 API.'
+    description = 'Compiles the Paper adapter against the newest supported Paper 26.3 API.'
     source = sourceSets.main.java
     classpath = configurations.latestPaperApi + configurations.runtimeClasspath
     destinationDirectory = layout.buildDirectory.dir('classes/java/latestPaper')
@@ -97,6 +97,7 @@ tasks.register('compileLatestPaperJava', JavaCompile) {
         languageVersion = JavaLanguageVersion.of(25)
     }
     options.release = 21
+    options.compilerArgs << '-Xlint:deprecation'
 }
 
 check.dependsOn 'checkPaperIsolation', 'compileLatestPaperJava', ':common:check'

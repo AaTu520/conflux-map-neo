@@ -22,7 +22,7 @@ Conflux Map is a Fabric minimap and world map mod. The client runs on its own: t
 | `1.21.11`  | 1.21.11                 | ✓      | ✓            |
 | `26.1.2`   | 26.1, 26.1.1, 26.1.2    | ✓      | ✓            |
 | `26.2`     | 26.2                   | ✓      | ✓            |
-| `26.3`     | 26.3                   | ✓      | —            |
+| `26.3`     | 26.3                   | ✓      | ✓            |
 
 ## Installation
 
@@ -122,7 +122,7 @@ Chat coordinate sharing requires no server companion and works on any server.
 With the companion installed, the whole server shares one live map and one waypoint list.
 
 - Fabric server: place the matching JAR into `mods/`.
-- Paper server: place `confluxmap-paper-<version>.jar` into `plugins/` (Paper 1.21.1 through 26.2).
+- Paper server: place `confluxmap-paper-<version>.jar` into `plugins/` (Paper 1.21.1 through 26.3).
 
 Client and server versions can be upgraded independently: matching prediction algorithms use compact differential updates, differing algorithms fall back to full-data updates, and older-protocol clients always retain the basic map service.
 

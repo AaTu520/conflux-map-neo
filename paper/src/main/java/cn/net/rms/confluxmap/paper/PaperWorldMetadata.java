@@ -30,7 +30,12 @@ final class PaperWorldMetadata {
         if (generator != null) {
             return presetFromGenerator(generator);
         }
-        return fallbackPreset(world.getWorldType());
+        return fallbackPreset(worldType(world));
+    }
+
+    @SuppressWarnings("deprecation")
+    private static WorldType worldType(final World world) {
+        return world.getWorldType();
     }
 
     static WorldPreset presetFromGenerator(final CompoundTag generator) {
