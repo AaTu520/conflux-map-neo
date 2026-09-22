@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-[![CurseForge 下载量](https://img.shields.io/curseforge/dt/1663891?logo=curseforge&label=CurseForge&color=f16436)](https://www.curseforge.com/minecraft/mc-mods/conflux-map) [![MC百科 ID](https://img.shields.io/badge/MC%E7%99%BE%E7%A7%91_ID-30075-3f85c6?logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAACXBIWXMAAAAAAAAAAQCEeRdzAAACfklEQVR4nHVS7UtTURy%2BHyoCP5TQfxN9DMt0vrSXu0VfAvsQCBmGVL5MdDrLyiB6IYgWFJSUM%2B%2Fm3K7bdTqzmQudd%2FfmnLqXtmmb07vmbsR8OndEH8IOPDz8OM9zzvM7v0NVVB6m2t7WdNz20ZsmTv2zb0ojHwRlb8BnyNwYrjJVVB6iFFPbXb8BvR41iOC%2FME3RMHPVMH7sRKPFZqIGZnWJPk5bMk%2FTpf4pbVmksNlLo9%2BrI7WWsB6D0zVo527t0wxfop2xbcrEaSSjW4V2tgo9XENZrHA7ewZGdy16OTU62NO44riJ6pEgzjMr0Nt4mepxN%2B5axSEEUhN46m9B52Q1Hs81YyFlByM8wZ1pGjNRK7h4BlziB0zzUajH%2BCJldNVLQtYHZS0kHWh1nMTcBlOuV1OL8Kes%2BC4DzPo2RtcyaHKtQGMTZarb1SAtZlxI70SRlsMY8jYhKUWwuScgEF9DIFfAy%2BUkTg0vof5DCDqbCL2dGI1OcmNuBrMRBpH8Z4S3lpCQluBed%2BBLKodP2V94EVSMQWLkoRrlQSvGrgmVFM0T4epr2MPPyhHfr4iwkFvC2QLYb3nEJRmPFlN4JW7hfiAJmgmRqGz9rjf2Bu%2F4QTzwXYKYS6PZHUP%2FfBwjkSwus2H403kI23sI78gYj%2B5AN7ZcJOPQ5rs9dejjzuIqe49ECUJL%2BtAwAhrGBKgJn7PyqCURawjqyn0KMvkAmpiZq91vmXxY0trXoR8nc7ILygP8hWH8K0GZ92lbqGRwRjLKl7t23fecnLxGmhb%2BQDwQOiaEi54Y6izuLupo5TFKZfG0XnBGNshpRSIoEOz9gwKJVySaBDF1HDl%2BgvoNorIyyNSoGRkAAAAASUVORK5CYII%3D)](https://www.mcmod.cn/class/30075.html)
+[![CurseForge 下载量](https://img.shields.io/curseforge/dt/1663891?logo=curseforge&label=CurseForge&color=f16436)](https://www.curseforge.com/minecraft/mc-mods/conflux-map) [![MC百科 ID](https://img.shields.io/badge/MC%E7%99%BE%E7%A7%91_ID-30075-3f85c6?logo=data%3Aimage%2Fpng%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAACXBIWXMAAAAAAAAAAQCEeRdzAAACfklEQVR4nHVS7UtTURy%2BHyoCP5TQfxN9DMt0vrSXu0VfAvsQCBmGVL5MdDrLyiB6IYgWFJSUM%2B%2Fm3K7bdTqzmQudd%2FfmnLqXtmmb07vmbsR8OndEH8IOPDz8OM9zzvM7v0NVVB6m2t7WdNz20ZsmTv2zb0ojHwRlb8BnyNwYrjJVVB6iFFPbXb8BvR41iOC%2FME3RMHPVMH7sRKPFZqIGZnWJPk5bMk%2FTpf4pbVmksNlLo9%2BrI7WWsB6D0zVo527t0wxfop2xbcrEaSSjW4V2tgo9XENZrHA7ewZGdy16OTU62NO44riJ6pEgzjMr0Nt4mepxN%2B5axSEEUhN46m9B52Q1Hs81YyFlByM8wZ1pGjNRK7h4BlziB0zzUajH%2BCJldNVLQtYHZS0kHWh1nMTcBlOuV1OL8Kes%2BC4DzPo2RtcyaHKtQGMTZarb1SAtZlxI70SRlsMY8jYhKUWwuScgEF9DIFfAy%2BUkTg0vof5DCDqbCL2dGI1OcmNuBrMRBpH8Z4S3lpCQluBed%2BBLKodP2V94EVSMQWLkoRrlQSvGrgmVFM0T4epr2MPPyhHfr4iwkFvC2QLYb3nEJRmPFlN4JW7hfiAJmgmRqGz9rjf2Bu%2F4QTzwXYKYS6PZHUP%2FfBwjkSwus2H403kI23sI78gYj%2B5AN7ZcJOPQ5rs9dejjzuIqe49ECUJL%2BtAwAhrGBKgJn7PyqCURawjqyn0KMvkAmpiZq91vmXxY0trXoR8nc7ILygP8hWH8K0GZ92lbqGRwRjLKl7t23fecnLxGmhb%2BQDwQOiaEi54Y6izuLupo5TFKZfG0XnBGNshpRSIoEOz9gwKJVySaBDF1HDl%2BgvoNorIyyNSoGRkAAAAASUVORK5CYII%3D)](https://www.mcmod.cn/class/30075.html) [![QQ 群](https://img.shields.io/badge/QQ%E7%BE%A4-362669270-eb1923?logo=qq&logoColor=white)](https://qun.qq.com/universal-share/share?ac=1&authKey=X68UEgKub%2FljNQ2gt977XUcHdklPbuSUlV0sxCFnvqWdDXXtDCGYleOTjPb1xYTY&busi_data=eyJncm91cENvZGUiOiIzNjI2NjkyNzAiLCJ0b2tlbiI6IjFaYXFmWjhQaHo0S0xHakhPdWM5c2lrM2t4L2ZpN2N5TmxGMi8yaGJJUFpjSWszcG9XdGlWUWZwL2Z6bGtnMTYiLCJ1aW4iOiIyNjI4ODgzNTc2In0%3D&data=spJ33k1yvhmWCjxI6bLw3xMXstlfzRC1iQRK2vP-g0aRaPb_ueNDl2haX1Z4AWNUh6pUSLIdjlv8IxQ3VStwng&svctype=4&tempid=h5_group_info)
 
 Conflux Map 是一款 Fabric 平台的小地图与世界地图模组。客户端可独立运行：小地图、全屏世界地图、群系图层、路径点、结构查找、地图绘图与 PNG 导出均集成于同一个 JAR。若服务器安装配套的服务端组件，整个服务器还可以共享同一份实时地图、一套公共路径点，以及一个通过浏览器访问的网页地图。
 
@@ -151,6 +151,13 @@ Conflux Map 是一款 Fabric 平台的小地图与世界地图模组。客户端
 ```
 
 `1.21.11` 可替换为上表中的任意版本。构建产物分别输出至 `versions/<版本>/build/libs/` 与 `paper/build/libs/`。`:paper:runServer` 会下载本地 Paper 1.21.1 开发服务器并安装刚构建的插件；首次运行需在 `paper/run/eula.txt` 中接受 EULA，然后重新执行该任务。
+
+## 联系我们
+
+如需反馈问题、提出建议或参与交流，欢迎通过官方渠道联系我们：
+
+- 邮箱：[contact@cxu.org.cn](mailto:contact@cxu.org.cn)
+- QQ 群：[362669270](https://qun.qq.com/universal-share/share?ac=1&authKey=X68UEgKub%2FljNQ2gt977XUcHdklPbuSUlV0sxCFnvqWdDXXtDCGYleOTjPb1xYTY&busi_data=eyJncm91cENvZGUiOiIzNjI2NjkyNzAiLCJ0b2tlbiI6IjFaYXFmWjhQaHo0S0xHakhPdWM5c2lrM2t4L2ZpN2N5TmxGMi8yaGJJUFpjSWszcG9XdGlWUWZwL2Z6bGtnMTYiLCJ1aW4iOiIyNjI4ODgzNTc2In0%3D&data=spJ33k1yvhmWCjxI6bLw3xMXstlfzRC1iQRK2vP-g0aRaPb_ueNDl2haX1Z4AWNUh6pUSLIdjlv8IxQ3VStwng&svctype=4&tempid=h5_group_info)
 
 ## 许可证
 
