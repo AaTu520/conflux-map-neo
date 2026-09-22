@@ -1,6 +1,7 @@
 package cn.net.rms.confluxmap.mc.ui.screen;
 
 import cn.net.rms.confluxmap.compat.MinecraftAccess;
+import cn.net.rms.confluxmap.compat.MouseButtons;
 import cn.net.rms.confluxmap.compat.Texts;
 import cn.net.rms.confluxmap.compat.Widgets;
 import cn.net.rms.confluxmap.core.model.DimensionId;
@@ -334,7 +335,7 @@ final class StructureCandidateScreen extends ConfluxScreen {
     public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
     //#endif
         final CandidateListUi listUi = candidateListUi();
-        if (button == 0 && listUi.containsScrollBar(mouseX, mouseY)) {
+        if (button == MouseButtons.LEFT && listUi.containsScrollBar(mouseX, mouseY)) {
             draggingScrollBar = true;
             scrollBarGrabOffset = listUi.scrollBarGrabOffset(mouseY);
             updateScrollFromMouse(mouseY);
@@ -347,7 +348,7 @@ final class StructureCandidateScreen extends ConfluxScreen {
         //#endif
             return true;
         }
-        final int candidateIndex = button == 0 ? listUi.candidateAt(mouseX, mouseY) : -1;
+        final int candidateIndex = button == MouseButtons.LEFT ? listUi.candidateAt(mouseX, mouseY) : -1;
         if (candidateIndex >= 0 && structures.availableTypes(dimension).contains(type)) {
             focus(results.get(candidateIndex));
             return true;
@@ -369,7 +370,7 @@ final class StructureCandidateScreen extends ConfluxScreen {
         final double deltaY
     ) {
     //#endif
-        if (button == 0 && draggingScrollBar) {
+        if (button == MouseButtons.LEFT && draggingScrollBar) {
             updateScrollFromMouse(mouseY);
             return true;
         }
@@ -390,7 +391,7 @@ final class StructureCandidateScreen extends ConfluxScreen {
     //#else
     public boolean mouseReleased(final double mouseX, final double mouseY, final int button) {
     //#endif
-        if (button == 0 && draggingScrollBar) {
+        if (button == MouseButtons.LEFT && draggingScrollBar) {
             draggingScrollBar = false;
             return true;
         }

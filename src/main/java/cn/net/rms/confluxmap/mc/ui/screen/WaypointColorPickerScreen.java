@@ -1,6 +1,7 @@
 package cn.net.rms.confluxmap.mc.ui.screen;
 
 import cn.net.rms.confluxmap.compat.MinecraftAccess;
+import cn.net.rms.confluxmap.compat.MouseButtons;
 import cn.net.rms.confluxmap.compat.Texts;
 import cn.net.rms.confluxmap.compat.Widgets;
 import cn.net.rms.confluxmap.mc.render.RenderUtil;
@@ -119,7 +120,7 @@ final class WaypointColorPickerScreen extends ConfluxScreen {
         //#endif
             return true;
         }
-        if (button != 0) {
+        if (button != MouseButtons.LEFT) {
             return false;
         }
         if (insidePicker(mouseX, mouseY)) {
@@ -150,11 +151,11 @@ final class WaypointColorPickerScreen extends ConfluxScreen {
         final double deltaY
     ) {
     //#endif
-        if (button == 0 && draggingPicker) {
+        if (button == MouseButtons.LEFT && draggingPicker) {
             updatePicker(mouseX, mouseY);
             return true;
         }
-        if (button == 0 && draggingHue) {
+        if (button == MouseButtons.LEFT && draggingHue) {
             updateHue(mouseY);
             return true;
         }
@@ -172,7 +173,7 @@ final class WaypointColorPickerScreen extends ConfluxScreen {
     //#else
     public boolean mouseReleased(final double mouseX, final double mouseY, final int button) {
     //#endif
-        if (button == 0 && (draggingPicker || draggingHue)) {
+        if (button == MouseButtons.LEFT && (draggingPicker || draggingHue)) {
             draggingPicker = false;
             draggingHue = false;
             return true;

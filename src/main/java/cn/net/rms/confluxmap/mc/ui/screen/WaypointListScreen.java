@@ -2,6 +2,7 @@ package cn.net.rms.confluxmap.mc.ui.screen;
 
 import cn.net.rms.confluxmap.compat.Ids;
 import cn.net.rms.confluxmap.compat.MinecraftAccess;
+import cn.net.rms.confluxmap.compat.MouseButtons;
 import cn.net.rms.confluxmap.compat.Texts;
 import cn.net.rms.confluxmap.compat.Widgets;
 import cn.net.rms.confluxmap.ConfluxMapClient;
@@ -1368,7 +1369,7 @@ public final class WaypointListScreen extends ConfluxScreen {
     public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
     //#endif
         final DropdownGeometry dimensionDropdown = dimensionDropdownGeometry();
-        if (button == 0 && dimensionDropdown != null) {
+        if (button == MouseButtons.LEFT && dimensionDropdown != null) {
             if (dimensionDropdown.containsPopup(mouseX, mouseY)) {
                 if (dimensionDropdownOptions.size() > dimensionDropdown.visibleRows()
                     && mouseX >= dimensionDropdown.x() + dimensionDropdown.width()
@@ -1396,7 +1397,7 @@ public final class WaypointListScreen extends ConfluxScreen {
         }
         final WaypointStore store = waypointService.current();
         final DropdownGeometry dropdown = dropdownGeometry(store);
-        if (button == 0 && dropdown != null) {
+        if (button == MouseButtons.LEFT && dropdown != null) {
             if (dropdown.containsPopup(mouseX, mouseY)) {
                 final List<String> options = dropdownOptions(store);
                 final int optionBottom = dropdown.popupY() + dropdown.optionHeight();
@@ -1450,7 +1451,7 @@ public final class WaypointListScreen extends ConfluxScreen {
         final double deltaY
     ) {
     //#endif
-        if (button == 0 && draggingDropdownScrollbar) {
+        if (button == MouseButtons.LEFT && draggingDropdownScrollbar) {
             final DropdownGeometry dimensionDropdown = dimensionDropdownGeometry();
             if (dimensionDropdown != null) {
                 dimensionDropdownScrollOffset = dropdownScrollFromMouse(
@@ -1482,7 +1483,7 @@ public final class WaypointListScreen extends ConfluxScreen {
     //#else
     public boolean mouseReleased(final double mouseX, final double mouseY, final int button) {
     //#endif
-        if (button == 0 && draggingDropdownScrollbar) {
+        if (button == MouseButtons.LEFT && draggingDropdownScrollbar) {
             draggingDropdownScrollbar = false;
             return true;
         }

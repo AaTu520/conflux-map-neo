@@ -14,6 +14,7 @@ import net.minecraft.client.MinecraftClient;
 //#endif
 import net.minecraft.client.gui.screen.Screen;
 import cn.net.rms.confluxmap.compat.Keys;
+import cn.net.rms.confluxmap.compat.MouseButtons;
 
 /** Explicit edit mode for dragging the minimap without consuming normal gameplay clicks. */
 public final class MinimapPositionScreen extends ConfluxScreen {
@@ -130,7 +131,7 @@ public final class MinimapPositionScreen extends ConfluxScreen {
         //#endif
             return true;
         }
-        if (button != 0) {
+        if (button != MouseButtons.LEFT) {
             return false;
         }
         drag = MinimapPlacement.startDrag(currentLayout(), mouseX, mouseY);
@@ -152,7 +153,7 @@ public final class MinimapPositionScreen extends ConfluxScreen {
         final double deltaY
     ) {
     //#endif
-        if (button == 0 && drag != null) {
+        if (button == MouseButtons.LEFT && drag != null) {
             applyPosition(MinimapPlacement.dragTo(width, height, config.minimapSize, drag, mouseX, mouseY));
             return true;
         }
@@ -170,7 +171,7 @@ public final class MinimapPositionScreen extends ConfluxScreen {
     //#else
     public boolean mouseReleased(final double mouseX, final double mouseY, final int button) {
     //#endif
-        if (button == 0 && drag != null) {
+        if (button == MouseButtons.LEFT && drag != null) {
             drag = null;
             return true;
         }

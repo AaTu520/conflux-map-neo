@@ -1,5 +1,6 @@
 package cn.net.rms.confluxmap.mc.ui.screen;
 
+import cn.net.rms.confluxmap.compat.MouseButtons;
 import cn.net.rms.confluxmap.mc.ui.GuiDraw;
 
 /** Interactive left-hand map pane shared by the structure picker and candidate browser. */
@@ -42,7 +43,7 @@ final class SplitMapPane {
         final int button,
         final SplitMapLayout layout
     ) {
-        if (button != 0 || !layout.containsMap(mouseX, mouseY)) {
+        if (button != MouseButtons.LEFT || !layout.containsMap(mouseX, mouseY)) {
             return false;
         }
         dragging = true;
@@ -54,7 +55,7 @@ final class SplitMapPane {
         final double deltaX,
         final double deltaY
     ) {
-        if (button != 0 || !dragging) {
+        if (button != MouseButtons.LEFT || !dragging) {
             return false;
         }
         map.panEmbedded(deltaX, deltaY);
@@ -62,7 +63,7 @@ final class SplitMapPane {
     }
 
     boolean mouseReleased(final int button) {
-        if (button != 0 || !dragging) {
+        if (button != MouseButtons.LEFT || !dragging) {
             return false;
         }
         dragging = false;

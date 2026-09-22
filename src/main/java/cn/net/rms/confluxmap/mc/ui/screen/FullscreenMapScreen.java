@@ -5,6 +5,7 @@ import cn.net.rms.confluxmap.bridge.GameBridge;
 import cn.net.rms.confluxmap.bridge.PlayerView;
 import cn.net.rms.confluxmap.compat.Ids;
 import cn.net.rms.confluxmap.compat.MinecraftAccess;
+import cn.net.rms.confluxmap.compat.MouseButtons;
 import cn.net.rms.confluxmap.compat.Regs;
 import cn.net.rms.confluxmap.compat.Texts;
 import cn.net.rms.confluxmap.compat.Widgets;
@@ -1798,7 +1799,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
     //#else
     public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
     //#endif
-        if (button == 0 && selectTargetDropdownOption(mouseX, mouseY)) {
+        if (button == MouseButtons.LEFT && selectTargetDropdownOption(mouseX, mouseY)) {
             mapPointerPress = false;
             return true;
         }
@@ -1810,11 +1811,11 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             //#endif
                 return true;
             }
-            if (button == 1) {
+            if (button == MouseButtons.RIGHT) {
                 cancelExportSelection();
                 return true;
             }
-            if (button == 0) {
+            if (button == MouseButtons.LEFT) {
                 if (exportSelection.bounds().isPresent()) {
                     return true;
                 }
@@ -1836,7 +1837,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
                 performPendingLocationAction();
                 return true;
             }
-            if (button == 1 && !isOverMapControls(mouseX, mouseY)) {
+            if (button == MouseButtons.RIGHT && !isOverMapControls(mouseX, mouseY)) {
                 openLocationMenu(mouseX, mouseY);
                 return true;
             }
@@ -1869,11 +1870,11 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             return true;
         }
         if (measureMode) {
-            if (button == 1) {
+            if (button == MouseButtons.RIGHT) {
                 undoMeasurePoint();
                 return true;
             }
-            if (button == 0) {
+            if (button == MouseButtons.LEFT) {
                 // Press only arms pan; the point itself is placed on release (see mouseReleased)
                 // so dragging still pans and a sub-tolerance release still measures.
                 leftPressX = mouseX;
@@ -1883,14 +1884,14 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             }
             return false;
         }
-        if (button == 0 && beginAnnotationPointer(mouseX, mouseY)) {
+        if (button == MouseButtons.LEFT && beginAnnotationPointer(mouseX, mouseY)) {
             return true;
         }
-        if (button == 1) {
+        if (button == MouseButtons.RIGHT) {
             openLocationMenu(mouseX, mouseY);
             return true;
         }
-        if (button == 0) {
+        if (button == MouseButtons.LEFT) {
             leftPressX = mouseX;
             leftPressY = mouseY;
             mapPointerPress = true;
@@ -2283,18 +2284,18 @@ public final class FullscreenMapScreen extends ConfluxScreen {
     //#else
     public boolean mouseReleased(final double mouseX, final double mouseY, final int button) {
     //#endif
-        if (exportSelectionScreen != null && button == 0 && mapPointerPress) {
+        if (exportSelectionScreen != null && button == MouseButtons.LEFT && mapPointerPress) {
             mapPointerPress = false;
             if (Math.hypot(mouseX - leftPressX, mouseY - leftPressY) < CLICK_DRAG_TOLERANCE_PX) {
                 selectExportCorner(mouseX, mouseY);
             }
             return true;
         }
-        if (button == 0 && annotationPointerPress) {
+        if (button == MouseButtons.LEFT && annotationPointerPress) {
             commitAnnotationPointer(mouseX, mouseY);
             return true;
         }
-        if (button != 0 || !mapPointerPress) {
+        if (button != MouseButtons.LEFT || !mapPointerPress) {
             //#if MC>=12109
             //$$ return super.mouseReleased(click);
             //#else
@@ -2382,7 +2383,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
     //#else
     public boolean mouseDragged(final double mouseX, final double mouseY, final int button, final double deltaX, final double deltaY) {
     //#endif
-        if (button == 0 && annotationPointerPress) {
+        if (button == MouseButtons.LEFT && annotationPointerPress) {
             if (annotationTool == AnnotationTool.ERASER) {
                 final AnnotationStore store = viewAnnotationStore();
                 if (store != null) {
@@ -2396,7 +2397,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             }
             return true;
         }
-        if (button == 0 && mapPointerPress) {
+        if (button == MouseButtons.LEFT && mapPointerPress) {
             // Opposite the drag direction, 1:1 in world-space at the current scale (§4 pan mechanics).
             centerX -= deltaX * scale;
             centerZ -= deltaY * scale;

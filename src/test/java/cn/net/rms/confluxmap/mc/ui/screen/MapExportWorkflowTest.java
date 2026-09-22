@@ -65,12 +65,13 @@ final class MapExportWorkflowTest {
         final String source = source("src/main/java/cn/net/rms/confluxmap/mc/ui/screen/FullscreenMapScreen.java");
         final int mouseClickedStart = source.indexOf("public boolean mouseClicked");
         final int selectionStart = source.indexOf("if (exportSelectionScreen != null) {", mouseClickedStart);
-        final int selectionEnd = source.indexOf("            if (button == 0)", selectionStart);
+        final int selectionEnd = source.indexOf("if (button == MouseButtons.LEFT)", selectionStart);
 
         assertTrue(mouseClickedStart >= 0 && selectionStart >= 0 && selectionEnd > selectionStart,
             "selection click handling must be present");
         final String selectionClicks = source.substring(selectionStart, selectionEnd);
-        assertTrue(selectionClicks.contains("if (button == 1) {\n                cancelExportSelection();"));
+        assertTrue(selectionClicks.contains(
+            "if (button == MouseButtons.RIGHT) {\n                cancelExportSelection();"));
         assertFalse(
             selectionClicks.contains("exportSelection.first().isEmpty()"),
             "right-click must not leave a partially completed export selection active"

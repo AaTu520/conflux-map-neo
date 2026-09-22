@@ -1,6 +1,7 @@
 package cn.net.rms.confluxmap.mc.ui.screen;
 
 import cn.net.rms.confluxmap.compat.MinecraftAccess;
+import cn.net.rms.confluxmap.compat.MouseButtons;
 import cn.net.rms.confluxmap.ConfluxMapClient;
 import cn.net.rms.confluxmap.compat.Regs;
 import cn.net.rms.confluxmap.compat.Texts;
@@ -541,7 +542,7 @@ final class StructureSearchScreen extends ConfluxScreen {
     public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
     //#endif
         final ScrollBarModel bar = scrollBar();
-        if (button == 0 && bar.visible()
+        if (button == MouseButtons.LEFT && bar.visible()
             && mouseX >= scrollBarX() && mouseX < scrollBarX() + SCROLLBAR_WIDTH
             && mouseY >= bar.trackTop() && mouseY < bar.trackTop() + bar.trackHeight()) {
             draggingScrollBar = true;
@@ -576,7 +577,7 @@ final class StructureSearchScreen extends ConfluxScreen {
         final double deltaY
     ) {
     //#endif
-        if (button == 0 && draggingScrollBar) {
+        if (button == MouseButtons.LEFT && draggingScrollBar) {
             updateScrollFromMouse(mouseY);
             return true;
         }
@@ -597,7 +598,7 @@ final class StructureSearchScreen extends ConfluxScreen {
     //#else
     public boolean mouseReleased(final double mouseX, final double mouseY, final int button) {
     //#endif
-        if (button == 0 && draggingScrollBar) {
+        if (button == MouseButtons.LEFT && draggingScrollBar) {
             draggingScrollBar = false;
             return true;
         }
