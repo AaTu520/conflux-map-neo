@@ -1,9 +1,27 @@
 name: Check
 on:
   pull_request:
+    paths-ignore:
+      - '**/README.md'
+      - '**/README_CN.md'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - 'docs/**'
+      - '.gitignore'
+      - '.gitattributes'
+      - '.github/CODEOWNERS'
   push:
     branches:
       - master
+    paths-ignore:
+      - '**/README.md'
+      - '**/README_CN.md'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - 'docs/**'
+      - '.gitignore'
+      - '.gitattributes'
+      - '.github/CODEOWNERS'
 permissions:
   contents: read
 env:
