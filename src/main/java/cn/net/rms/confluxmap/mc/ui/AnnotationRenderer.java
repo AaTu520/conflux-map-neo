@@ -165,7 +165,8 @@ public final class AnnotationRenderer {
         }
     }
 
-    private static void stroke(
+    /** Screen-space quad line, also reused by the fullscreen map's measure overlay. */
+    public static void stroke(
         final MatrixStack matrices,
         final AnnotationProjection.ScreenPoint start,
         final AnnotationProjection.ScreenPoint end,

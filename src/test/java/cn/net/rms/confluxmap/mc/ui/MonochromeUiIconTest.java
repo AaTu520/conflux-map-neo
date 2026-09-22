@@ -53,7 +53,8 @@ final class MonochromeUiIconTest {
         "annotation_persistence_transient.png",
         "annotation_label.png",
         "annotation_undo.png",
-        "annotation_redo.png"
+        "annotation_redo.png",
+        "measure.png"
     };
 
     /** Keeps the declared contract and the shipped folder in step, in both directions. */

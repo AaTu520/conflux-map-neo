@@ -60,6 +60,7 @@ final class UiResourceThemeTest {
             "map_biome.png",
             "map_biome_off.png",
             "map_terrain.png",
+            "measure.png",
             "structure_search.png",
             "structure_search_off.png",
             "waypoint_local.png",
@@ -76,7 +77,7 @@ final class UiResourceThemeTest {
             final Identifier icon = Ids.of("confluxmap", "textures/gui/" + file);
             assertEquals(UiIcon.monochrome(icon), theme.icon(icon), file);
         }
-        assertEquals(34, UiResourceTheme.auditedIconIds().size());
+        assertEquals(35, UiResourceTheme.auditedIconIds().size());
     }
 
     @Test

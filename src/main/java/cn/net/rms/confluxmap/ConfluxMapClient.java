@@ -9,6 +9,7 @@ import cn.net.rms.confluxmap.core.config.ConfluxConfig;
 import cn.net.rms.confluxmap.core.export.MapExportService;
 import cn.net.rms.confluxmap.core.export.ServiceMapExportTileSource;
 import cn.net.rms.confluxmap.core.loadstate.FullscreenDisplayMode;
+import cn.net.rms.confluxmap.core.measure.MeasureState;
 import cn.net.rms.confluxmap.core.multiworld.ClientWorldProfileIo;
 import cn.net.rms.confluxmap.core.multiworld.ClientWorldProfileRegistry;
 import cn.net.rms.confluxmap.core.multiworld.ClientWorldProfileResolver;
@@ -120,6 +121,7 @@ public final class ConfluxMapClient implements ClientModInitializer {
     private DeathWatcher deathWatcher;
     private WaypointWorldRenderer waypointWorldRenderer;
     private WaypointHighlightState waypointHighlightState;
+    private MeasureState measureState;
     private WaypointItemHudRenderer waypointItemHudRenderer;
     private DaylightModel daylightModel;
     private McDaylightTracker daylightTracker;
@@ -309,6 +311,7 @@ public final class ConfluxMapClient implements ClientModInitializer {
         annotationService = new AnnotationService(annotationRoot, executors, ConfluxMapMod.LOGGER);
         waypointRenderCatalog = new WaypointRenderCatalog(waypointService, sharedWaypoints::list, config);
         waypointHighlightState = new WaypointHighlightState();
+        measureState = new MeasureState();
         deathWatcher = new DeathWatcher(gameBridge, config, waypointService);
         uiResourceTheme = new UiResourceTheme();
         minimapHudRenderer = new MinimapHudRenderer(
@@ -347,6 +350,7 @@ public final class ConfluxMapClient implements ClientModInitializer {
         sessionTracker.addListener(fullscreenMapViewState::onSessionChanged);
         sessionTracker.addListener(waypointService::onSessionChanged);
         sessionTracker.addListener(waypointHighlightState::onSessionChanged);
+        sessionTracker.addListener(measureState::onSessionChanged);
         sessionTracker.addListener(annotationService::onSessionChanged);
         sessionTracker.addListener(correctionStore::onSessionChanged);
         sessionTracker.addListener(session -> mapSyncClient.reset());
@@ -554,6 +558,10 @@ public final class ConfluxMapClient implements ClientModInitializer {
 
     public WaypointHighlightState waypointHighlightState() {
         return waypointHighlightState;
+    }
+
+    public MeasureState measureState() {
+        return measureState;
     }
 
     public WaypointItemHudRenderer waypointItemHudRenderer() {

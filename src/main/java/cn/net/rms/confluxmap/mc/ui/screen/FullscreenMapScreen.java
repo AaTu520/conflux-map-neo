@@ -29,6 +29,9 @@ import cn.net.rms.confluxmap.core.loadstate.ChunkLoadDetailMode;
 import cn.net.rms.confluxmap.core.loadstate.ChunkLoadOverlayStyle;
 import cn.net.rms.confluxmap.core.loadstate.ChunkScreenRect;
 import cn.net.rms.confluxmap.core.loadstate.FullscreenDisplayMode;
+import cn.net.rms.confluxmap.core.measure.MeasureFormat;
+import cn.net.rms.confluxmap.core.measure.MeasurePath;
+import cn.net.rms.confluxmap.core.measure.MeasureState;
 import cn.net.rms.confluxmap.core.model.DimensionId;
 import cn.net.rms.confluxmap.core.model.MapLayer;
 import cn.net.rms.confluxmap.core.model.TileKey;
@@ -261,11 +264,23 @@ public final class FullscreenMapScreen extends ConfluxScreen {
     private static final Identifier ANNOTATION_REDO_ICON = Ids.of(
         "confluxmap", "textures/gui/annotation_redo.png"
     );
+    private static final Identifier MEASURE_ICON = Ids.of(
+        "confluxmap", "textures/gui/measure.png"
+    );
     private static final int TEXT_COLOR = 0xFFFFFFFF;
     private static final int SYNCING_TEXT_COLOR = 0xFFFFE066;
     private static final int SYNCED_TEXT_COLOR = 0xFF80E080;
     private static final int SYNC_FAILED_TEXT_COLOR = 0xFFFF7777;
     private static final int UPDATE_TEXT_COLOR = 0xFFFFE066;
+    /** Measure overlay: teal line reads over green/brown terrain without clashing with the amber annotation palette. */
+    private static final int MEASURE_LINE_COLOR = 0xFF3FD1C7;
+    private static final int MEASURE_PREVIEW_COLOR = 0x993FD1C7;
+    private static final int MEASURE_VERTEX_COLOR = 0xFFFFFFFF;
+    private static final int MEASURE_TOTAL_COLOR = 0xFFFFE066;
+    private static final float MEASURE_STROKE_WIDTH = 2.0f;
+    private static final float MEASURE_PREVIEW_STROKE_WIDTH = 1.5f;
+    private static final float MEASURE_VERTEX_RADIUS = 3.0f;
+    private static final double MEASURE_LABEL_OFFSET_PX = 9.0;
     private static final int BACKGROUND_COLOR = 0xFF101018;
     private static final int LOAD_STATE_ENTITY_COLOR = 0x7048B85E;
     private static final int LOAD_STATE_BLOCK_COLOR = 0x70D8A83E;
@@ -340,6 +355,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
     private final UiResourceTheme uiTheme;
     private InitialFocus initialFocus;
     private final WaypointHighlightState waypointHighlightState;
+    private final MeasureState measureState;
 
     /** World point currently at screen center, and blocks-per-pixel; all mutable, panned/zoomed by input. */
     private double centerX;
@@ -398,9 +414,12 @@ public final class FullscreenMapScreen extends ConfluxScreen {
     private ButtonWidget annotationLabelButton;
     private ButtonWidget annotationUndoButton;
     private ButtonWidget annotationRedoButton;
+    private ButtonWidget measureButton;
     private FullscreenDisplayMode controlsDisplayMode;
     private boolean annotationColorMenuOpen;
     private AnnotationTool annotationTool = AnnotationTool.SELECT;
+    /** Exclusive with every {@link AnnotationTool}: while on, left-click places measure points instead of drawing. */
+    private boolean measureMode;
     private AnnotationPersistence newAnnotationPersistence = AnnotationPersistence.PERSISTENT;
     private int newAnnotationColor = ANNOTATION_COLORS[5];
     private UUID selectedAnnotationId;
@@ -457,6 +476,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             mapBrowser.waypoints(), List::of, config
         );
         this.waypointHighlightState = app.waypointHighlightState();
+        this.measureState = app.measureState();
 
         final DimensionId dimension = gameBridge.session().dimension();
         final Optional<PlayerView> player = gameBridge.viewpoint();
@@ -557,6 +577,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
         annotationLabelButton = null;
         annotationUndoButton = null;
         annotationRedoButton = null;
+        measureButton = null;
         annotationToolbarBounds = null;
         annotationColorMenuBounds = null;
         displayModeButton = null;
@@ -894,7 +915,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
 
     private void rebuildAnnotationControls(final int desiredTop) {
 
-        final int controlCount = AnnotationTool.values().length + 5;
+        final int controlCount = AnnotationTool.values().length + 6;
         final int stride = ANNOTATION_CONTROL_SIZE + ANNOTATION_CONTROL_GAP;
         final int availableToolbarWidth = width - MARGIN * 2 - CONTROL_GAP - CONTROL_SIZE;
         final int maxToolColumns = Math.max(
@@ -952,6 +973,14 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             annotationToolButtons.put(tool, button);
             index++;
         }
+        measureButton = addAnnotationIconButton(
+            controlX(left, stride, rows, index),
+            controlY(top, stride, rows, index),
+            MEASURE_ICON,
+            "confluxmap.map.measure.tooltip",
+            ignored -> selectMeasureTool()
+        );
+        index++;
         addColorButton(
             controlX(left, stride, rows, index),
             controlY(top, stride, rows, index),
@@ -1186,8 +1215,11 @@ public final class FullscreenMapScreen extends ConfluxScreen {
         for (final Map.Entry<AnnotationTool, ButtonWidget> entry : annotationToolButtons.entrySet()) {
             entry.getValue().active = true;
             if (entry.getValue() instanceof MapIconButton iconButton) {
-                iconButton.setSelected(entry.getKey() == annotationTool);
+                iconButton.setSelected(entry.getKey() == annotationTool && !measureMode);
             }
+        }
+        if (measureButton instanceof MapIconButton iconButton) {
+            iconButton.setSelected(measureMode);
         }
         final boolean selected = selectedAnnotation().isPresent();
         if (annotationLabelButton != null) {
@@ -1253,6 +1285,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             && lastEraserButtonClickMs != Long.MIN_VALUE
             && now - lastEraserButtonClickMs <= DOUBLE_CLICK_INTERVAL_MS;
         lastEraserButtonClickMs = tool == AnnotationTool.ERASER ? now : Long.MIN_VALUE;
+        measureMode = false;
         annotationTool = tool;
         annotationDraft = null;
         movingAnnotation = null;
@@ -1264,6 +1297,17 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             lastEraserButtonClickMs = Long.MIN_VALUE;
             MinecraftAccess.setScreen(MinecraftClient.getInstance(), new AnnotationEraserSettingsScreen(this, config));
         }
+    }
+
+    private void selectMeasureTool() {
+        measureMode = true;
+        annotationTool = AnnotationTool.SELECT;
+        annotationDraft = null;
+        movingAnnotation = null;
+        annotationPointerPress = false;
+        erasingAnnotationIds.clear();
+        annotationColorMenuOpen = false;
+        rebuildWaypointControls();
     }
 
     private void activateAnnotationColorButton(final int color, final boolean opensMenu) {
@@ -1680,6 +1724,10 @@ public final class FullscreenMapScreen extends ConfluxScreen {
         }
         final boolean controlDown = (modifiers & (cn.net.rms.confluxmap.compat.Keys.MOD_CONTROL | cn.net.rms.confluxmap.compat.Keys.MOD_SUPER)) != 0;
         final boolean shiftDown = (modifiers & cn.net.rms.confluxmap.compat.Keys.MOD_SHIFT) != 0;
+        if (controlDown && keyCode == cn.net.rms.confluxmap.compat.Keys.Z && !shiftDown && measureMode) {
+            undoMeasurePoint();
+            return true;
+        }
         if (controlDown && keyCode == cn.net.rms.confluxmap.compat.Keys.Z) {
             if (shiftDown) {
                 redoAnnotationChange();
@@ -1820,6 +1868,21 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             mapPointerPress = false;
             return true;
         }
+        if (measureMode) {
+            if (button == 1) {
+                undoMeasurePoint();
+                return true;
+            }
+            if (button == 0) {
+                // Press only arms pan; the point itself is placed on release (see mouseReleased)
+                // so dragging still pans and a sub-tolerance release still measures.
+                leftPressX = mouseX;
+                leftPressY = mouseY;
+                mapPointerPress = true;
+                return true;
+            }
+            return false;
+        }
         if (button == 0 && beginAnnotationPointer(mouseX, mouseY)) {
             return true;
         }
@@ -1916,6 +1979,18 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             centerX + (mouseX - width / 2.0) * scale,
             centerZ + (mouseY - height / 2.0) * scale
         );
+    }
+
+    private MeasurePath measurePath() {
+        final SessionGuard.Session session = viewSession();
+        return measureState.path(session.world(), session.dimension());
+    }
+
+    /** Right-click contract of the measure tool: undo the newest point, exit once the path is empty. */
+    private void undoMeasurePoint() {
+        if (!measurePath().undo()) {
+            selectAnnotationTool(AnnotationTool.SELECT);
+        }
     }
 
     private void openLocationMenu(final double mouseX, final double mouseY) {
@@ -2227,6 +2302,15 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             //#endif
         }
         mapPointerPress = false;
+        if (measureMode
+            && !isOverMapControls(mouseX, mouseY)
+            && Math.hypot(mouseX - leftPressX, mouseY - leftPressY) < CLICK_DRAG_TOLERANCE_PX) {
+            final AnnotationPoint raw = annotationWorldPoint(mouseX, mouseY);
+            measurePath().add(new AnnotationPoint(
+                Math.floor(raw.x()) + 0.5, Math.floor(raw.z()) + 0.5
+            ));
+            return true;
+        }
         if (hoveredWaypoint != null
             && !isOverMapControls(mouseX, mouseY)
             && Math.hypot(mouseX - leftPressX, mouseY - leftPressY) < CLICK_DRAG_TOLERANCE_PX) {
@@ -2515,6 +2599,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
         drawWaypoints(draw, mouseX, mouseY, radarObserver);
         drawCameraMarker(matrices, radarObserver);
         drawPlayerMarker(matrices, tickDelta);
+        drawMeasureOverlay(draw, mouseX, mouseY);
         drawExportSelection(draw, mouseX, mouseY);
         drawDimensionLabel(draw);
         drawLayerLabel(draw);
@@ -2654,6 +2739,124 @@ public final class FullscreenMapScreen extends ConfluxScreen {
                 0xE6FFFFFF
             );
         }
+    }
+
+    /**
+     * Measure overlay: committed points and segments stay visible for the viewed dimension even
+     * after the tool is deselected, so a finished measurement keeps reading until cleared.
+     */
+    private void drawMeasureOverlay(final GuiDraw draw, final int mouseX, final int mouseY) {
+        final MeasurePath path = measurePath();
+        if (!measureMode && path.isEmpty()) {
+            return;
+        }
+        final MatrixStack matrices = draw.matrices();
+        final AnnotationProjection projection = new AnnotationProjection(
+            centerX, centerZ, width / 2.0, height / 2.0, scale, 0.0, width, height
+        );
+        final List<AnnotationPoint> points = path.points();
+        for (int index = 1; index < points.size(); index++) {
+            final AnnotationProjection.ScreenPoint start = projection.project(points.get(index - 1));
+            final AnnotationProjection.ScreenPoint end = projection.project(points.get(index));
+            AnnotationRenderer.stroke(matrices, start, end, MEASURE_STROKE_WIDTH, MEASURE_LINE_COLOR);
+            drawMeasureSegmentLabel(draw, start, end, measureDistanceText(path.segmentLength(index - 1)));
+        }
+        for (final AnnotationPoint point : points) {
+            final AnnotationProjection.ScreenPoint at = projection.project(point);
+            RenderUtil.fillBeveledDiamond(
+                matrices, (float) at.x(), (float) at.y(), MEASURE_VERTEX_RADIUS, MEASURE_VERTEX_COLOR
+            );
+        }
+        if (points.size() >= 2) {
+            final AnnotationProjection.ScreenPoint last = projection.project(points.get(points.size() - 1));
+            drawMeasureLabel(
+                draw,
+                last.x(),
+                last.y() - MEASURE_VERTEX_RADIUS - 2.0,
+                Texts.translatable(
+                    "confluxmap.map.measure.total", measureDistanceText(path.totalLength())
+                ).getString(),
+                MEASURE_TOTAL_COLOR
+            );
+        }
+        final boolean cursorOnMap = locationMenuBounds == null && !isOverMapControls(mouseX, mouseY);
+        if (measureMode && !path.isEmpty() && cursorOnMap && exportSelectionScreen == null) {
+            final AnnotationPoint raw = annotationWorldPoint(mouseX, mouseY);
+            final AnnotationPoint snapped = new AnnotationPoint(
+                Math.floor(raw.x()) + 0.5, Math.floor(raw.z()) + 0.5
+            );
+            final AnnotationProjection.ScreenPoint from = projection.project(points.get(points.size() - 1));
+            final AnnotationProjection.ScreenPoint to = projection.project(snapped);
+            AnnotationRenderer.stroke(
+                matrices, from, to, MEASURE_PREVIEW_STROKE_WIDTH, MEASURE_PREVIEW_COLOR
+            );
+            drawMeasureSegmentLabel(
+                draw, from, to, measureDistanceText(MeasurePath.distance(points.get(points.size() - 1), snapped))
+            );
+        }
+        if (measureMode && exportSelectionScreen == null) {
+            final String hint = Texts.translatable("confluxmap.map.measure.hint").getString();
+            final int hintWidth = this.textRenderer.getWidth(hint);
+            draw.drawTextWithShadow(
+                this.textRenderer,
+                hint,
+                width / 2f - hintWidth / 2f,
+                height - MARGIN - 12 - this.textRenderer.fontHeight,
+                TEXT_COLOR
+            );
+        }
+    }
+
+    private static String measureDistanceText(final double blocks) {
+        return Texts.translatable("confluxmap.map.measure.segment", MeasureFormat.blocks(blocks)).getString();
+    }
+
+    private void drawMeasureSegmentLabel(
+        final GuiDraw draw,
+        final AnnotationProjection.ScreenPoint start,
+        final AnnotationProjection.ScreenPoint end,
+        final String text
+    ) {
+        final double dx = end.x() - start.x();
+        final double dy = end.y() - start.y();
+        final double length = Math.hypot(dx, dy);
+        if (length == 0.0) {
+            return;
+        }
+        final double perpendicularX = -dy / length;
+        final double perpendicularY = dx / length;
+        // Always lift the label to the segment's upper side so it stays over the map.
+        final double side = perpendicularY > 0.0 ? -1.0 : 1.0;
+        drawMeasureLabel(
+            draw,
+            (start.x() + end.x()) / 2.0 + perpendicularX * side * MEASURE_LABEL_OFFSET_PX,
+            (start.y() + end.y()) / 2.0 + perpendicularY * side * MEASURE_LABEL_OFFSET_PX,
+            text,
+            0xFFFFFFFF
+        );
+    }
+
+    private void drawMeasureLabel(
+        final GuiDraw draw,
+        final double x,
+        final double y,
+        final String text,
+        final int color
+    ) {
+        final int textWidth = this.textRenderer.getWidth(text);
+        final float left = (float) (x - textWidth / 2.0);
+        final float top = (float) (y - this.textRenderer.fontHeight / 2.0);
+        if (left < 0.0f || top < 0.0f
+            || left + textWidth > width || top + this.textRenderer.fontHeight > height) {
+            return;
+        }
+        if (mapOverlayIntersectsUi(
+            left - 1.0f, top - 1.0f,
+            left + textWidth + 1.0f, top + this.textRenderer.fontHeight + 1.0f
+        )) {
+            return;
+        }
+        draw.drawTextWithShadow(this.textRenderer, text, left, top, color);
     }
 
     private FullscreenDisplayMode displayMode() {
