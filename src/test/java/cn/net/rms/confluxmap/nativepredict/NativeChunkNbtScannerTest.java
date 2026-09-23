@@ -149,18 +149,25 @@ class NativeChunkNbtScannerTest {
     /**
      * A 26.3 mixed palette exactly as it lies on disk: ListTag#wrapIfNeeded serialized the
      * default-state stone as {"" : id} beside the non-default oak_stairs compound, and only a
-     * raw-byte parser sees this wrapped form.
+     * raw-byte parser sees this wrapped form. Since 1.21.5 the writer applies wrapIfNeeded to
+     * empty-key entries itself, so a hand-built wrapped compound serializes as {"" : {"" : id}};
+     * there the bare string is added directly and vanilla does the wrapping. Pre-1.21.5 lists
+     * reject heterogeneous entries and write verbatim, so the wrapped compound is built by hand.
      */
     private static NbtList mixedPalette263(final String waterlogged) {
-        final NbtCompound stone = new NbtCompound();
-        stone.putString("", "minecraft:stone");
         final NbtCompound properties = new NbtCompound();
         properties.putString("waterlogged", waterlogged);
         final NbtCompound stairs = new NbtCompound();
         stairs.putString("id", "minecraft:oak_stairs");
         stairs.put("properties", properties);
         final NbtList palette = new NbtList();
+        //#if MC>=12105
+        //$$ palette.add(NbtString.of("minecraft:stone"));
+        //#else
+        final NbtCompound stone = new NbtCompound();
+        stone.putString("", "minecraft:stone");
         palette.add(stone);
+        //#endif
         palette.add(stairs);
         return palette;
     }
