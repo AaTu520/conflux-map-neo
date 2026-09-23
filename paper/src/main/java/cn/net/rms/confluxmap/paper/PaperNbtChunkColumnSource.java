@@ -9,6 +9,7 @@ import java.util.List;
 import net.querz.nbt.tag.CompoundTag;
 import net.querz.nbt.tag.ListTag;
 import net.querz.nbt.tag.StringTag;
+import net.querz.nbt.tag.Tag;
 
 /** Serialized Anvil chunk implementation of the platform-neutral summary input seam. */
 final class PaperNbtChunkColumnSource implements ChunkColumnSource {
@@ -126,17 +127,42 @@ final class PaperNbtChunkColumnSource implements ChunkColumnSource {
             final CompoundTag modernStates = compound(section, "block_states");
             final boolean modern = modernStates != null;
             final CompoundTag blockStates = modern ? modernStates : section;
-            final ListTag<CompoundTag> palette = compoundList(
-                blockStates, modern ? "palette" : "Palette"
-            );
-            final String[] names = new String[Math.max(1, palette.size())];
+            final ListTag<?> palette = blockStates == null
+                ? null : blockStates.getListTag(modern ? "palette" : "Palette");
+            final int paletteSize = palette == null ? 0 : palette.size();
+            final String[] names = new String[Math.max(1, paletteSize)];
             final SurfaceKind[] fluidKinds = new SurfaceKind[names.length];
-            for (int p = 0; p < palette.size(); p++) {
-                final CompoundTag entry = palette.get(p);
-                names[p] = string(entry, "Name");
-                fluidKinds[p] = fluidKind(names[p], compoundOrEmpty(entry, "Properties"));
+            for (int p = 0; p < paletteSize; p++) {
+                // Palette entry forms: {"Name": ..., "Properties": {...}} before 26.3 and
+                // {"id": ..., "properties": {...}} after; default states are bare id strings.
+                // Querz reads the raw bytes, so a mixed palette arrives with its strings still
+                // wrapped as {"" : id} (ListTag#wrapIfNeeded on write) — vanilla's own reader
+                // unwraps that form and never exposes it in memory.
+                final Tag<?> entry = palette.get(p);
+                if (entry instanceof StringTag stringEntry) {
+                    names[p] = stringEntry.getValue();
+                    fluidKinds[p] = fluidKind(names[p], null);
+                } else if (entry instanceof CompoundTag compoundEntry) {
+                    String name = string(compoundEntry, "Name");
+                    if (name.isEmpty()) {
+                        name = string(compoundEntry, "id");
+                    }
+                    if (name.isEmpty()) {
+                        name = string(compoundEntry, "");
+                    }
+                    final CompoundTag properties = compound(compoundEntry, "properties");
+                    names[p] = name;
+                    fluidKinds[p] = properties != null
+                        ? fluidKind(names[p], properties)
+                        : fluidKind(names[p], compoundOrEmpty(compoundEntry, "Properties"));
+                } else {
+                    // Corrupted entry of an unexpected type: degrade to air instead of leaving
+                    // a null name that NPEs in the downstream contains() checks.
+                    names[p] = "minecraft:air";
+                    fluidKinds[p] = SurfaceKind.UNKNOWN;
+                }
             }
-            if (palette.size() == 0) {
+            if (paletteSize == 0) {
                 names[0] = "minecraft:air";
                 fluidKinds[0] = SurfaceKind.UNKNOWN;
             }

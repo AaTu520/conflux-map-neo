@@ -15,6 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.function.IntUnaryOperator;
 import java.util.zip.DeflaterOutputStream;
 import net.querz.nbt.io.NBTOutputStream;
 import net.querz.nbt.io.NamedTag;
@@ -78,6 +79,58 @@ class PaperAnvilReaderTest {
         assertTrue(chunk.generated());
         assertEquals(42L, chunk.revision());
         assertEquals(0, chunk.columns()[0].surfaceY());
+    }
+
+    @Test
+    void bareStringPalettesIntroducedIn263AreSummarized(@TempDir final Path temporary)
+        throws IOException {
+        final ListTag<StringTag> palette = new ListTag<>(StringTag.class);
+        palette.add(new StringTag("minecraft:water"));
+        palette.add(new StringTag("minecraft:air"));
+        palette.add(new StringTag("minecraft:stone"));
+        writeRegion(temporary.resolve("r.-1.0.mca"), modernOceanChunk(palette), 31, 0);
+
+        final SummaryCodec.SampledChunk chunk = scannedOceanChunk(temporary);
+
+        assertTrue(chunk.generated());
+        assertEquals(62, chunk.columns()[0].surfaceY());
+        assertEquals(SurfaceKind.LAND.ordinal(), chunk.columns()[0].kind());
+    }
+
+    @Test
+    void wrappedMixedPalettesIntroducedIn263AreSummarized(@TempDir final Path temporary)
+        throws IOException {
+        // Raw-byte shape of a 26.3 mixed palette: ListTag#wrapIfNeeded serialized the bare
+        // default-state strings as {"" : id} inside the compound-typed list. Vanilla's reader
+        // unwraps them on load; querz shows the bytes exactly as written.
+        final ListTag<CompoundTag> wetPalette = new ListTag<>(CompoundTag.class);
+        wetPalette.add(wrappedEntry("minecraft:water"));
+        wetPalette.add(wrappedEntry("minecraft:air"));
+        wetPalette.add(idStoneEntry("true"));
+        writeRegion(temporary.resolve("r.-1.0.mca"), modernOceanChunk(wetPalette), 31, 0);
+        final SummaryCodec.SampledChunk wetChunk = scannedOceanChunk(temporary);
+
+        assertTrue(wetChunk.generated());
+        assertEquals(62, wetChunk.columns()[0].surfaceY());
+        assertEquals(SurfaceKind.WATER.ordinal(), wetChunk.columns()[0].kind());
+
+        final ListTag<CompoundTag> dryPalette = new ListTag<>(CompoundTag.class);
+        dryPalette.add(wrappedEntry("minecraft:water"));
+        dryPalette.add(wrappedEntry("minecraft:air"));
+        dryPalette.add(idStoneEntry("false"));
+        writeRegion(temporary.resolve("r.-1.0.mca"), modernOceanChunk(dryPalette), 31, 0);
+        assertEquals(SurfaceKind.LAND.ordinal(), scannedOceanChunk(temporary).columns()[0].kind());
+    }
+
+    private static SummaryCodec.SampledChunk scannedOceanChunk(final Path temporary) {
+        return new PaperAnvilReader()
+            .scanRegion(
+                temporary,
+                0,
+                new ChunkRegionSlice(-1, 0, 15, 0, 15, 0),
+                new ChunkColumnSummarizer(name -> 11)
+            )
+            .chunks()[15];
     }
 
     private static void writeRegion(
@@ -181,5 +234,68 @@ class PaperAnvilReaderTest {
         sections.add(section);
         root.put("sections", sections);
         return root;
+    }
+
+    /**
+     * Modern ocean column mirroring the Fabric ChunkSummarizerTest fixture: water below, the
+     * palette's third entry (a stone state) at local layer 14 (world y 62), air above, and
+     * heightmaps that make y 62 the motion-blocking surface.
+     */
+    private static CompoundTag modernOceanChunk(final ListTag<?> blockPalette) {
+        final CompoundTag root = new CompoundTag();
+        root.putString("Status", "minecraft:full");
+        root.putLong("LastUpdate", 42L);
+        root.putInt("yPos", -4);
+        final CompoundTag heightmaps = new CompoundTag();
+        heightmaps.putLongArray("MOTION_BLOCKING", pack(9, 256, ignored -> 127));
+        heightmaps.putLongArray("OCEAN_FLOOR", pack(9, 256, ignored -> 114));
+        root.put("Heightmaps", heightmaps);
+
+        final CompoundTag blockStates = new CompoundTag();
+        blockStates.put("palette", blockPalette);
+        blockStates.putLongArray("data", pack(4, 4096, index -> {
+            final int localY = index >>> 8;
+            if (localY == 15) {
+                return 1;
+            }
+            return localY == 14 ? 2 : 0;
+        }));
+        final CompoundTag section = new CompoundTag();
+        section.putByte("Y", (byte) 3);
+        section.put("block_states", blockStates);
+        final ListTag<StringTag> biomePalette = new ListTag<>(StringTag.class);
+        biomePalette.add(new StringTag("minecraft:plains"));
+        final CompoundTag biomes = new CompoundTag();
+        biomes.put("palette", biomePalette);
+        section.put("biomes", biomes);
+        final ListTag<CompoundTag> sections = new ListTag<>(CompoundTag.class);
+        sections.add(section);
+        root.put("sections", sections);
+        return root;
+    }
+
+    private static CompoundTag wrappedEntry(final String name) {
+        final CompoundTag entry = new CompoundTag();
+        entry.putString("", name);
+        return entry;
+    }
+
+    private static CompoundTag idStoneEntry(final String waterlogged) {
+        final CompoundTag properties = new CompoundTag();
+        properties.putString("waterlogged", waterlogged);
+        final CompoundTag stone = new CompoundTag();
+        stone.putString("id", "minecraft:stone");
+        stone.put("properties", properties);
+        return stone;
+    }
+
+    private static long[] pack(final int bits, final int count, final IntUnaryOperator values) {
+        final int perWord = 64 / bits;
+        final long[] words = new long[(count + perWord - 1) / perWord];
+        final long mask = (1L << bits) - 1L;
+        for (int i = 0; i < count; i++) {
+            words[i / perWord] |= ((long) values.applyAsInt(i) & mask) << ((i % perWord) * bits);
+        }
+        return words;
     }
 }

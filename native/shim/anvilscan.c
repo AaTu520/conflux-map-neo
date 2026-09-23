@@ -402,13 +402,19 @@ static int cfxParseBlockEntry(CfxNbtReader *reader, CfxBlockEntry *entry) {
         if (type == NBT_END)
             break;
         const CfxSlice name = cfxNbtString(reader);
-        if (type == NBT_STRING && cfxSliceEquals(name, "Name")) {
+        /* Palette entry name keys: "Name"/"Properties" before 26.3, "id"/"properties" after.
+         * A mixed palette serializes its bare default-state strings wrapped as {"" : id}
+         * (vanilla ListTag#wrapIfNeeded); vanilla's reader unwraps that form on load, so the
+         * empty key below only matters to raw-byte parsers like this one. */
+        if (type == NBT_STRING
+            && (cfxSliceEquals(name, "Name") || cfxSliceEquals(name, "id") || name.size == 0)) {
             const CfxSlice value = cfxNbtString(reader);
             free(entry->name);
             entry->name = cfxSliceCopy(value);
             if (entry->name == NULL)
                 reader->failed = 1;
-        } else if (type == NBT_COMPOUND && cfxSliceEquals(name, "Properties")) {
+        } else if (type == NBT_COMPOUND
+            && (cfxSliceEquals(name, "Properties") || cfxSliceEquals(name, "properties"))) {
             waterlogged = cfxParseProperties(reader);
         } else {
             cfxNbtSkip(reader, type, 1);
@@ -428,7 +434,9 @@ static int cfxParseBlockPalette(CfxNbtReader *reader, CfxSection *section) {
     const int count = cfxNbtCount(reader);
     if (reader->failed)
         return 0;
-    if (element_type != NBT_COMPOUND || count > CFX_MAX_PALETTE) {
+    // 26.3 serializes a palette entry as a bare block-id string when the state is the
+    // block's default; compounds stay for states with properties (and older versions).
+    if ((element_type != NBT_COMPOUND && element_type != NBT_STRING) || count > CFX_MAX_PALETTE) {
         for (int i = 0; i < count && !reader->failed; i++)
             cfxNbtSkip(reader, element_type, 1);
         return !reader->failed;
@@ -438,8 +446,17 @@ static int cfxParseBlockPalette(CfxNbtReader *reader, CfxSection *section) {
         reader->failed = 1;
         return 0;
     }
-    for (int i = 0; i < count && !reader->failed; i++)
-        cfxParseBlockEntry(reader, &blocks[i]);
+    for (int i = 0; i < count && !reader->failed; i++) {
+        if (element_type == NBT_STRING) {
+            blocks[i].name = cfxSliceCopy(cfxNbtString(reader));
+            if (blocks[i].name == NULL)
+                reader->failed = 1;
+            else
+                blocks[i].fluid = cfxFluidForName(blocks[i].name, 0);
+        } else {
+            cfxParseBlockEntry(reader, &blocks[i]);
+        }
+    }
     if (reader->failed) {
         cfxFreeBlocks(blocks, count);
         return 0;

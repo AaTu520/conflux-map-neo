@@ -11,6 +11,7 @@ import java.util.Arrays;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtString;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
@@ -91,6 +92,80 @@ class NativeChunkNbtScannerTest {
     }
 
     @Test
+    void bareStringPalettesIntroducedIn263AreScanned() throws IOException {
+        Assumptions.assumeTrue(NativeLib.initForTests(), "native library unavailable");
+        final NbtList palette = new NbtList();
+        palette.add(NbtString.of("minecraft:stone"));
+        palette.add(NbtString.of("minecraft:black_stained_glass"));
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (DataOutputStream output = new DataOutputStream(bytes)) {
+            NbtIo.write(generatedChunk(palette, 2), output);
+        }
+
+        final NativeChunkNbtScanner.Chunk chunk = NativeChunkNbtScanner.scan(
+            bytes.toByteArray(), 4
+        );
+
+        assertNotNull(chunk);
+        assertTrue(chunk.generated());
+        assertEquals(0, chunk.samples()[0].surfaceY());
+        assertEquals("minecraft:stone", chunk.samples()[0].surfaceBlock());
+        assertEquals("minecraft:black_stained_glass", chunk.samples()[0].overlayBlock());
+    }
+
+    @Test
+    void wrappedMixedPalettesIntroducedIn263AreScanned() throws IOException {
+        Assumptions.assumeTrue(NativeLib.initForTests(), "native library unavailable");
+        final ByteArrayOutputStream wetBytes = new ByteArrayOutputStream();
+        try (DataOutputStream output = new DataOutputStream(wetBytes)) {
+            NbtIo.write(generatedChunk(mixedPalette263("true"), 2), output);
+        }
+        final NativeChunkNbtScanner.Chunk wet = NativeChunkNbtScanner.scan(
+            wetBytes.toByteArray(), 4
+        );
+
+        assertNotNull(wet);
+        assertTrue(wet.generated());
+        assertEquals(1, wet.samples()[0].surfaceY());
+        assertEquals("minecraft:oak_stairs", wet.samples()[0].surfaceBlock());
+        assertEquals(1, wet.samples()[0].fluidKind());
+        assertEquals(1, wet.samples()[0].fluidDepth());
+        assertEquals("minecraft:stone", wet.samples()[0].floorBlock());
+
+        final ByteArrayOutputStream dryBytes = new ByteArrayOutputStream();
+        try (DataOutputStream output = new DataOutputStream(dryBytes)) {
+            NbtIo.write(generatedChunk(mixedPalette263("false"), 2), output);
+        }
+        final NativeChunkNbtScanner.Chunk dry = NativeChunkNbtScanner.scan(
+            dryBytes.toByteArray(), 4
+        );
+
+        assertNotNull(dry);
+        assertEquals("minecraft:oak_stairs", dry.samples()[0].surfaceBlock());
+        assertEquals(0, dry.samples()[0].fluidKind());
+        assertEquals(0, dry.samples()[0].fluidDepth());
+    }
+
+    /**
+     * A 26.3 mixed palette exactly as it lies on disk: ListTag#wrapIfNeeded serialized the
+     * default-state stone as {"" : id} beside the non-default oak_stairs compound, and only a
+     * raw-byte parser sees this wrapped form.
+     */
+    private static NbtList mixedPalette263(final String waterlogged) {
+        final NbtCompound stone = new NbtCompound();
+        stone.putString("", "minecraft:stone");
+        final NbtCompound properties = new NbtCompound();
+        properties.putString("waterlogged", waterlogged);
+        final NbtCompound stairs = new NbtCompound();
+        stairs.putString("id", "minecraft:oak_stairs");
+        stairs.put("properties", properties);
+        final NbtList palette = new NbtList();
+        palette.add(stone);
+        palette.add(stairs);
+        return palette;
+    }
+
+    @Test
     void malformedNbtFailsWithoutEscapingNativeParser() {
         Assumptions.assumeTrue(NativeLib.initForTests(), "native library unavailable");
         final java.util.Random random = new java.util.Random(0xC0FFEE);
@@ -118,6 +193,17 @@ class NativeChunkNbtScannerTest {
     private static NbtCompound generatedChunk(
         final String topBlockName, final int motionHeight
     ) {
+        final NbtCompound stone = new NbtCompound();
+        stone.putString("Name", "minecraft:stone");
+        final NbtCompound top = new NbtCompound();
+        top.putString("Name", topBlockName);
+        final NbtList palette = new NbtList();
+        palette.add(stone);
+        palette.add(top);
+        return generatedChunk(palette, motionHeight);
+    }
+
+    private static NbtCompound generatedChunk(final NbtList palette, final int motionHeight) {
         final NbtCompound level = new NbtCompound();
         level.putString("Status", "full");
         level.putLong("LastUpdate", 1L);
@@ -133,13 +219,6 @@ class NativeChunkNbtScannerTest {
         level.put("Heightmaps", heightmaps);
         level.putIntArray("Biomes", new int[1_024]);
 
-        final NbtCompound stone = new NbtCompound();
-        stone.putString("Name", "minecraft:stone");
-        final NbtCompound top = new NbtCompound();
-        top.putString("Name", topBlockName);
-        final NbtList palette = new NbtList();
-        palette.add(stone);
-        palette.add(top);
         final NbtCompound section = new NbtCompound();
         section.putByte("Y", (byte) 0);
         section.put("Palette", palette);

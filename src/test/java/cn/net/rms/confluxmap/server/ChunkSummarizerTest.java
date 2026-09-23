@@ -180,6 +180,107 @@ class ChunkSummarizerTest {
         assertEquals(0, column.biomeId());
     }
 
+    @Test
+    void bareStringPalettesIntroducedIn263AreSummarized() {
+        final NbtList blockPalette = new NbtList();
+        blockPalette.add(NbtString.of("minecraft:stone"));
+        blockPalette.add(NbtString.of("minecraft:water"));
+        blockPalette.add(NbtString.of("minecraft:air"));
+
+        final SummaryCodec.Chunk chunk = new ChunkSummarizer().summarize(modernOceanChunk(blockPalette));
+        final SummaryCodec.Column column = chunk.columns()[0];
+
+        assertTrue(chunk.generated());
+        assertEquals(62, column.surfaceY());
+        assertEquals(SurfaceKind.WATER.ordinal(), column.kind());
+        assertEquals(13, column.fluidDepth());
+    }
+
+    @Test
+    void compoundPalettesWithIdAndPropertiesIntroducedIn263AreSummarized() {
+        // 26.3 upgrades the palette to compounds once any entry carries properties:
+        // {"id": blockId, "properties": {...}} for those and bare ids for default states,
+        // which wrapIfNeeded serializes as {"" : blockId} inside the compound-typed list.
+        // This fixture builds that wrapped on-disk form. A waterlogged stone must classify
+        // as WATER while the same entry without the property stays LAND, proving both the
+        // id key and the properties compound were read.
+        final SummaryCodec.Chunk waterloggedChunk = new ChunkSummarizer().summarize(
+            modernOceanChunk(idPalette("true"), idPaletteData())
+        );
+        assertTrue(waterloggedChunk.generated());
+        assertEquals(62, waterloggedChunk.columns()[0].surfaceY());
+        assertEquals(SurfaceKind.WATER.ordinal(), waterloggedChunk.columns()[0].kind());
+
+        final SummaryCodec.Chunk dryChunk = new ChunkSummarizer().summarize(
+            modernOceanChunk(idPalette("false"), idPaletteData())
+        );
+        assertEquals(SurfaceKind.LAND.ordinal(), dryChunk.columns()[0].kind());
+    }
+
+    //#if MC>=12105
+    //$$ @Test
+    //$$ void mixedPalettesUnwrappedByVanillaAreSummarized() {
+    //$$     // What vanilla produces in memory for a 26.3 mixed palette: the reader's
+    //$$     // unwrapAndAdd turns the {"" : id} wraps back into bare StringTags sitting next
+    //$$     // to the {"id": ..., "properties": {...}} compounds. Only NbtLists from 1.21.5 on
+    //$$     // accept heterogeneous entries, hence the version gate.
+    //$$     final NbtList wetPalette = new NbtList();
+    //$$     wetPalette.add(NbtString.of("minecraft:water"));
+    //$$     wetPalette.add(NbtString.of("minecraft:air"));
+    //$$     wetPalette.add(idStoneEntry("true"));
+    //$$     final SummaryCodec.Chunk wetChunk = new ChunkSummarizer().summarize(
+    //$$         modernOceanChunk(wetPalette, idPaletteData())
+    //$$     );
+    //$$     assertTrue(wetChunk.generated());
+    //$$     assertEquals(62, wetChunk.columns()[0].surfaceY());
+    //$$     assertEquals(SurfaceKind.WATER.ordinal(), wetChunk.columns()[0].kind());
+    //$$
+    //$$     final NbtList dryPalette = new NbtList();
+    //$$     dryPalette.add(NbtString.of("minecraft:water"));
+    //$$     dryPalette.add(NbtString.of("minecraft:air"));
+    //$$     dryPalette.add(idStoneEntry("false"));
+    //$$     assertEquals(
+    //$$         SurfaceKind.LAND.ordinal(),
+    //$$         new ChunkSummarizer().summarize(modernOceanChunk(dryPalette, idPaletteData()))
+    //$$             .columns()[0].kind()
+    //$$     );
+    //$$ }
+    //#endif
+
+    /** Water column with a stone surface at localY 14 and air above, matching the heightmaps. */
+    private static IntUnaryOperator idPaletteData() {
+        return index -> {
+            final int localY = index >>> 8;
+            if (localY == 15) {
+                return 1;
+            }
+            return localY == 14 ? 2 : 0;
+        };
+    }
+
+    private static NbtList idPalette(final String waterlogged) {
+        final NbtList blockPalette = new NbtList();
+        blockPalette.add(bareCompoundEntry("minecraft:water"));
+        blockPalette.add(bareCompoundEntry("minecraft:air"));
+        blockPalette.add(idStoneEntry(waterlogged));
+        return blockPalette;
+    }
+
+    private static NbtCompound idStoneEntry(final String waterlogged) {
+        final NbtCompound properties = new NbtCompound();
+        properties.putString("waterlogged", waterlogged);
+        final NbtCompound stone = new NbtCompound();
+        stone.putString("id", "minecraft:stone");
+        stone.put("properties", properties);
+        return stone;
+    }
+
+    private static NbtCompound bareCompoundEntry(final String name) {
+        final NbtCompound entry = new NbtCompound();
+        entry.putString("", name);
+        return entry;
+    }
+
     private static void assertExactSeafloorCorrection(final SummaryCodec.Chunk chunk) {
         final SummaryCodec.Chunk[] chunks = new SummaryCodec.Chunk[SummaryCodec.CHUNKS];
         Arrays.fill(chunks, SummaryCodec.Chunk.empty());
@@ -491,6 +592,30 @@ class ChunkSummarizerTest {
     }
 
     private static NbtCompound modernOceanChunk() {
+        final NbtList blockPalette = new NbtList();
+        blockPalette.add(paletteEntry("minecraft:stone"));
+        blockPalette.add(paletteEntry("minecraft:water"));
+        blockPalette.add(paletteEntry("minecraft:air"));
+        return modernOceanChunk(blockPalette, index -> {
+            final int localY = index >>> 8;
+            if (localY >= 2 && localY <= 14) {
+                return 1;
+            }
+            return localY == 15 ? 2 : 0;
+        });
+    }
+
+    private static NbtCompound modernOceanChunk(final NbtList blockPalette) {
+        return modernOceanChunk(blockPalette, index -> {
+            final int localY = index >>> 8;
+            if (localY >= 2 && localY <= 14) {
+                return 1;
+            }
+            return localY == 15 ? 2 : 0;
+        });
+    }
+
+    private static NbtCompound modernOceanChunk(final NbtList blockPalette, final IntUnaryOperator values) {
         final NbtCompound root = new NbtCompound();
         root.putString("Status", "minecraft:full");
         root.putInt("yPos", -4);
@@ -504,18 +629,8 @@ class ChunkSummarizerTest {
         final NbtCompound section = new NbtCompound();
         section.putByte("Y", (byte) 3);
         final NbtCompound blockStates = new NbtCompound();
-        final NbtList blockPalette = new NbtList();
-        blockPalette.add(paletteEntry("minecraft:stone"));
-        blockPalette.add(paletteEntry("minecraft:water"));
-        blockPalette.add(paletteEntry("minecraft:air"));
         blockStates.put("palette", blockPalette);
-        blockStates.putLongArray("data", pack(4, 4096, index -> {
-            final int localY = index >>> 8;
-            if (localY >= 2 && localY <= 14) {
-                return 1;
-            }
-            return localY == 15 ? 2 : 0;
-        }));
+        blockStates.putLongArray("data", pack(4, 4096, values));
         section.put("block_states", blockStates);
 
         final NbtCompound biomes = new NbtCompound();

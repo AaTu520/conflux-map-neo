@@ -123,13 +123,36 @@ final class NbtChunkColumnSource implements ChunkColumnSource {
             final NbtCompound blockStates = modern ? Nbts.compound(section, "block_states") : section;
             final String paletteKey = modern ? "palette" : "Palette";
             final String dataKey = modern ? "data" : "BlockStates";
-            final NbtList palette = Nbts.list(blockStates, paletteKey, 10);
+            final NbtList typedPalette = Nbts.list(blockStates, paletteKey, 10);
+            // Versions before 1.21.5 pick the list by element type; 26.3 writes default states
+            // as a string-typed palette, so a compound-typed miss falls back to a string read.
+            final NbtList palette = typedPalette.isEmpty()
+                ? Nbts.list(blockStates, paletteKey, 8)
+                : typedPalette;
             final String[] names = new String[Math.max(1, palette.size())];
             final SurfaceKind[] fluidKinds = new SurfaceKind[names.length];
             for (int p = 0; p < palette.size(); p++) {
+                // Palette entry forms: {"Name": ..., "Properties": {...}} before 26.3 and
+                // {"id": ..., "properties": {...}} after; default states are bare id strings.
+                // A mixed palette serializes its strings as {"" : id} (ListTag#wrapIfNeeded),
+                // but vanilla's reader unwraps that form while loading, so in-memory lists hold
+                // real strings next to the compounds and the empty-key probe only guards data
+                // that never passed through a vanilla reader. The compound read must go first:
+                // NbtList.getString returns the element's NBT text for compound entries on
+                // older versions, so a string probe would mangle those.
                 final NbtCompound entry = Nbts.compound(palette, p);
-                names[p] = Nbts.string(entry, "Name");
-                fluidKinds[p] = fluidKind(names[p], Nbts.compound(entry, "Properties"));
+                String name = Nbts.string(entry, "Name");
+                if (name.isEmpty()) {
+                    name = Nbts.string(entry, "id");
+                }
+                if (name.isEmpty()) {
+                    name = Nbts.string(entry, "");
+                }
+                final NbtCompound properties = Nbts.hasCompound(entry, "properties")
+                    ? Nbts.compound(entry, "properties")
+                    : Nbts.compound(entry, "Properties");
+                names[p] = name.isEmpty() ? Nbts.string(palette, p) : name;
+                fluidKinds[p] = fluidKind(names[p], properties);
             }
             if (palette.isEmpty()) {
                 names[0] = "minecraft:air";
