@@ -41,6 +41,13 @@ pluginManagement {
 plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
 }
+include ':api'
+// JitPack builds the zero-dependency api module straight from a git tag. Assembling the
+// full graph would configure loom and download Minecraft inside its build window, so the
+// multi-project layout comes together only outside JitPack.
+if (System.getenv('JITPACK')) {
+    return
+}
 include ':common'
 include ':paper'
 file('versions').eachDir { final File dir ->

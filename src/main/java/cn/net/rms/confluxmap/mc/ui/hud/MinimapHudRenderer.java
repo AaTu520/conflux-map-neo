@@ -7,6 +7,7 @@ import cn.net.rms.confluxmap.compat.Regs;
 import cn.net.rms.confluxmap.core.annotation.Annotation;
 import cn.net.rms.confluxmap.core.annotation.AnnotationProjection;
 import cn.net.rms.confluxmap.core.annotation.AnnotationService;
+import cn.net.rms.confluxmap.core.api.CustomMarkerService;
 import cn.net.rms.confluxmap.core.config.ConfluxConfig;
 import cn.net.rms.confluxmap.core.config.MinimapHudVisibility;
 import cn.net.rms.confluxmap.core.config.MinimapInformationLayout;
@@ -103,6 +104,7 @@ public final class MinimapHudRenderer {
     private final WaypointRenderCatalog waypointRenderCatalog;
     private final RadarViewRange radarViewRange;
     private final UiResourceTheme uiTheme;
+    private final CustomMarkerService customMarkers;
     private final Consumer<ChunkViewport> captureViewportPublisher;
     private final BooleanSupplier liveTerrainPaused;
 
@@ -121,6 +123,7 @@ public final class MinimapHudRenderer {
         final WaypointRenderCatalog waypointRenderCatalog,
         final RadarViewRange radarViewRange,
         final UiResourceTheme uiTheme,
+        final CustomMarkerService customMarkers,
         final Consumer<ChunkViewport> captureViewportPublisher,
         final BooleanSupplier liveTerrainPaused
     ) {
@@ -138,6 +141,7 @@ public final class MinimapHudRenderer {
         this.waypointRenderCatalog = waypointRenderCatalog;
         this.radarViewRange = radarViewRange;
         this.uiTheme = uiTheme;
+        this.customMarkers = customMarkers;
         this.captureViewportPublisher = captureViewportPublisher;
         this.liveTerrainPaused = liveTerrainPaused;
     }
@@ -338,6 +342,7 @@ public final class MinimapHudRenderer {
         drawRadar(draw, centerX, centerY, contentSize, mapAngle, player, tickDelta);
         drawCardinals(draw, centerX, centerY, contentSize, mapAngle);
         drawWaypointMarkers(draw, centerX, centerY, contentSize, mapAngle, player);
+        drawCustomMarkers(draw, centerX, centerY, contentSize, mapAngle, player);
         drawCameraMarker(matrices, player, centerX, centerY, rotate);
         final Optional<PlayerMarkerPlacement> localPlayerMarker = localPlayerMarker(
             player, centerX, centerY, contentSize, rotate, tickDelta
@@ -549,12 +554,55 @@ public final class MinimapHudRenderer {
         }
     }
 
+    /**
+     * Third-party markers from the public API, drawn above waypoints with the same
+     * world-delta projection as {@link #drawWaypointMarkers} but culled (not clamped to
+     * the edge) when they fall outside the frame - external integrations show a moving
+     * position, not a navigation target.
+     */
+    private void drawCustomMarkers(
+        final GuiDraw draw,
+        final float centerX,
+        final float centerY,
+        final int size,
+        final float mapAngle,
+        final PlayerView player
+    ) {
+        final List<WaypointRenderEntry> entries = customMarkers.renderEntries(
+            gameBridge.session().dimension(), true
+        );
+        if (entries.isEmpty()) {
+            return;
+        }
+        final float blocksPerPixel = BLOCKS_PER_PIXEL[config.minimapZoomIndex];
+        final float pxPerBlock = 1f / blocksPerPixel;
+        final double rad = Math.toRadians(mapAngle);
+        final float cos = (float) Math.cos(rad);
+        final float sin = (float) Math.sin(rad);
+        final float limit = size / 2f - WAYPOINT_MARKER_HALF_SIZE - 4f;
+
+        for (final WaypointRenderEntry marker : entries) {
+            final float rawX = (float) ((marker.x() - player.x()) * pxPerBlock);
+            final float rawY = (float) ((marker.z() - player.z()) * pxPerBlock);
+            final float screenOffX = rawX * cos - rawY * sin;
+            final float screenOffY = rawX * sin + rawY * cos;
+            if (Math.hypot(screenOffX, screenOffY) > limit) {
+                continue;
+            }
+            WaypointMarkerRenderer.draw(
+                draw, client.textRenderer, marker,
+                centerX + screenOffX, centerY + screenOffY,
+                WAYPOINT_MARKER_HALF_SIZE, 1f, false,
+                WaypointVerticalRelation.between(marker.y(), player.y())
+            );
+        }
+    }
+
     private record PlayerMarkerPlacement(
         float x,
         float y,
         float angleDegrees
     ) {}
-
     /**
      * Tiles are drawn as full 256-block quads positioned relative to the player,
      * in a coordinate space whose origin is the minimap center (the caller has

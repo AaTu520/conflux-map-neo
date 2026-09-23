@@ -1,0 +1,6 @@
+# JitPack builds only `:api` (settings.gradle trims the graph when JITPACK is set), so a
+# tag build resolves this module without loom, the preprocessor, or a Minecraft download.
+jdk:
+  - openjdk17
+install:
+  - ./gradlew :api:publishToMavenLocal

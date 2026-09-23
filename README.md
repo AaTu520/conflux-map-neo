@@ -153,6 +153,10 @@ Requires JDK 21 or newer. Gradle downloads Minecraft, the mappings, Fabric API, 
 
 Swap `1.21.11` for any version from the table above. Jars are written to `versions/<minecraft-version>/build/libs/` and the standalone Paper plugin to `paper/build/libs/`. `:paper:runServer` downloads a local Paper 1.21.1 development server and installs the freshly built plugin; accept the Minecraft EULA in `paper/run/eula.txt` and run the task again.
 
+## For mod developers
+
+Conflux Map ships a client-side API (waypoints, map-data queries, custom map markers, actions, and events). It is experimental and one dependency covers every supported Minecraft version. See [`docs/api.md`](docs/api.md) for the setup and usage guide.
+
 ## Contact
 
 For bug reports, suggestions, or general discussion, reach us through the official channels:

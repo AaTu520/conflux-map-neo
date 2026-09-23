@@ -37,6 +37,9 @@ public interface GameBridge {
     /** Whether the active viewpoint belongs to an entity other than the local player. */
     boolean isCameraDetached();
 
+    /** Whether the calling thread is the render thread (the client main thread). */
+    boolean isOnRenderThread();
+
     /** Run a task on the render thread (next frame at the latest). */
     void runOnRenderThread(Runnable task);
 }

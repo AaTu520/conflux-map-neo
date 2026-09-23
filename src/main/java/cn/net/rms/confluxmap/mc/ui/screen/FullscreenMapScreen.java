@@ -15,6 +15,8 @@ import cn.net.rms.confluxmap.core.annotation.AnnotationGeometry;
 import cn.net.rms.confluxmap.core.annotation.AnnotationPersistence;
 import cn.net.rms.confluxmap.core.annotation.AnnotationPoint;
 import cn.net.rms.confluxmap.core.annotation.AnnotationProjection;
+import cn.net.rms.confluxmap.core.api.ConfluxMapApiImpl;
+import cn.net.rms.confluxmap.core.api.CustomMarkerService;
 import cn.net.rms.confluxmap.core.annotation.AnnotationService;
 import cn.net.rms.confluxmap.core.annotation.AnnotationStore;
 import cn.net.rms.confluxmap.core.annotation.AnnotationStyle;
@@ -332,6 +334,9 @@ public final class FullscreenMapScreen extends ConfluxScreen {
     private final PredictionState predictionState;
     private final PredictionTileService predictionTiles;
     private final FullscreenMapViewState viewState;
+    private final CustomMarkerService customMarkers;
+    /** Guards the public API's map-opened event against the resize re-init of {@link #init()}. */
+    private boolean openAnnounced;
     private final LayerSelector layerSelector;
     private final WaypointService waypointService;
     private final AnnotationService annotationService;
@@ -470,6 +475,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
         this.clientMultiworld = app.clientMultiworldService();
         this.mapBrowser = app.fullscreenMapBrowseService();
         this.uiTheme = app.uiResourceTheme();
+        this.customMarkers = app.customMarkers();
         this.mapBrowser.clear();
         this.archivedWaypointRenderCatalog = new WaypointRenderCatalog(
             mapBrowser.waypoints(), List::of, config
@@ -506,6 +512,14 @@ public final class FullscreenMapScreen extends ConfluxScreen {
         locationMenuPlayerId = null;
         pendingLocationAction = null;
         locationMenuDeletePending = false;
+        // init() reruns on resize; announce the open event exactly once per screen life.
+        if (!openAnnounced) {
+            openAnnounced = true;
+            final ConfluxMapApiImpl api = ConfluxMapClient.get().api();
+            if (api != null) {
+                api.fireFullscreenMapOpened(gameBridge.session().dimension());
+            }
+        }
         final InitialFocus requestedFocus = initialFocus;
         if (requestedFocus != null) {
             initialFocus = null;
@@ -1725,6 +1739,13 @@ public final class FullscreenMapScreen extends ConfluxScreen {
         chunkLoadStates.deactivate();
         ConfluxMapClient.get().mapSyncClient().clearViewport();
         embeddedBlur.close();
+        if (openAnnounced) {
+            openAnnounced = false;
+            final ConfluxMapApiImpl api = ConfluxMapClient.get().api();
+            if (api != null) {
+                api.fireFullscreenMapClosed(gameBridge.session().dimension());
+            }
+        }
         super.removed();
     }
 
@@ -2676,6 +2697,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
         drawRadar(draw, tickDelta, mouseX, mouseY);
 
         drawWaypoints(draw, mouseX, mouseY, radarObserver);
+        drawCustomMarkers(draw);
         drawCameraMarker(matrices, radarObserver);
         drawPlayerMarker(matrices, tickDelta);
         drawMeasureOverlay(draw, mouseX, mouseY);
@@ -4385,6 +4407,48 @@ public final class FullscreenMapScreen extends ConfluxScreen {
 
     /** One waypoint's already-converted, already-viewport-culled screen position for this frame's {@link #drawWaypoints} pass. */
     private record ScreenMarker(WaypointRenderEntry waypoint, float screenX, float screenY) {
+    }
+
+    /**
+     * Third-party markers from the public API, above waypoints: same marker visuals and
+     * label threshold as {@link #drawWaypoints}, but no hover/selection state - external
+     * markers are informational, not navigation targets.
+     */
+    private void drawCustomMarkers(final GuiDraw draw) {
+        final List<WaypointRenderEntry> entries = customMarkers.renderEntries(
+            viewSession().dimension(), false
+        );
+        if (entries.isEmpty()) {
+            return;
+        }
+        final double pxPerBlock = 1.0 / scale;
+        for (final WaypointRenderEntry marker : entries) {
+            final float screenX = (float) (width / 2.0 + (marker.x() - centerX) * pxPerBlock);
+            final float screenY = (float) (height / 2.0 + (marker.z() - centerZ) * pxPerBlock);
+            if (screenX < -MARKER_HALF_SIZE || screenX > width + MARKER_HALF_SIZE
+                || screenY < -MARKER_HALF_SIZE || screenY > height + MARKER_HALF_SIZE) {
+                continue;
+            }
+            if (!mapOverlayIntersectsUi(
+                screenX - MARKER_HALF_SIZE - 1f, screenY - MARKER_HALF_SIZE - 1f,
+                screenX + MARKER_HALF_SIZE + 1f, screenY + MARKER_HALF_SIZE + 1f
+            )) {
+                WaypointMarkerRenderer.draw(
+                    draw, this.textRenderer, marker, screenX, screenY,
+                    MARKER_HALF_SIZE, 1f, false, WaypointVerticalRelation.NONE
+                );
+            }
+            if (scale <= NAME_LABEL_MAX_SCALE) {
+                final String label = marker.name();
+                final float labelX = screenX + MARKER_HALF_SIZE + 2;
+                final float labelY = screenY - 4;
+                final float labelRight = labelX + this.textRenderer.getWidth(label);
+                final float labelBottom = labelY + this.textRenderer.fontHeight;
+                if (!mapOverlayIntersectsUi(labelX, labelY, labelRight, labelBottom)) {
+                    draw.drawTextWithShadow(this.textRenderer, label, labelX, labelY, TEXT_COLOR);
+                }
+            }
+        }
     }
 
     private void drawDimensionLabel(final GuiDraw draw) {

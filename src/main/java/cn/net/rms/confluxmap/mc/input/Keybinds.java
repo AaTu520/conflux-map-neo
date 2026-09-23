@@ -124,6 +124,11 @@ public final class Keybinds {
         MinecraftAccess.setScreen(client, VanillaHotkeyScreen.create(parent, client));
     }
 
+    /** Executes one action programmatically; the public API routes its screen actions through here. */
+    public boolean trigger(final KeybindAction action) {
+        return actionHandler.trigger(action);
+    }
+
     private void poll() {
         if (maliLibBackend != null) {
             if (maliLibHint != null) {

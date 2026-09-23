@@ -203,6 +203,11 @@ public final class RegionColumns {
             : surfaceY[index];
     }
 
+    /** Biome resource id at one column, or null where no snapshot ever wrote one. */
+    public synchronized String biomeIdAt(final int localX, final int localZ) {
+        return biomeId[localZ * SIZE + localX];
+    }
+
     /**
      * Terrain height used by the detailed relief stencil. Land always uses its visible surface;
      * water/ice optionally expose the recorded floor so bathymetry can shade independently below

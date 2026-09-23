@@ -4,6 +4,7 @@ import cn.net.rms.confluxmap.core.model.ChunkSnapshot;
 import cn.net.rms.confluxmap.core.model.SampleSource;
 import cn.net.rms.confluxmap.core.util.TileMath;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -94,7 +95,7 @@ public final class ColumnStore {
         final int chunkLocalX = Math.floorMod(TileMath.blockToChunk(blockX), RegionColumns.CHUNKS);
         final int chunkLocalZ = Math.floorMod(TileMath.blockToChunk(blockZ), RegionColumns.CHUNKS);
         if (region.chunkSource(chunkLocalX, chunkLocalZ).priority()
-            < SampleSource.REAL_CACHED.priority()) {
+                < SampleSource.REAL_CACHED.priority()) {
             return SurfaceLookup.UNKNOWN;
         }
         final short surfaceY = region.surfaceYAt(
@@ -104,6 +105,24 @@ public final class ColumnStore {
             true,
             surfaceY == ChunkSnapshot.NO_SURFACE ? OptionalInt.empty() : OptionalInt.of(surfaceY)
         );
+    }
+
+    /** Biome resource id at one world column, or empty when that column is unknown. */
+    public Optional<String> biomeAt(final int blockX, final int blockZ) {
+        final RegionColumns region = region(TileMath.blockToTile(blockX), TileMath.blockToTile(blockZ));
+        if (region == null) {
+            return Optional.empty();
+        }
+        final int chunkLocalX = Math.floorMod(TileMath.blockToChunk(blockX), RegionColumns.CHUNKS);
+        final int chunkLocalZ = Math.floorMod(TileMath.blockToChunk(blockZ), RegionColumns.CHUNKS);
+        if (region.chunkSource(chunkLocalX, chunkLocalZ).priority()
+                < SampleSource.REAL_CACHED.priority()) {
+            return Optional.empty();
+        }
+        final String biome = region.biomeIdAt(
+            TileMath.blockInTile(blockX), TileMath.blockInTile(blockZ)
+        );
+        return biome == null || biome.isEmpty() ? Optional.empty() : Optional.of(biome);
     }
 
     /**

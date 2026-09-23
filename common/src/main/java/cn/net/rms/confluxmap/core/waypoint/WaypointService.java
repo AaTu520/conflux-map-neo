@@ -18,6 +18,7 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import org.apache.logging.log4j.Logger;
 
 /**
@@ -62,6 +63,7 @@ public final class WaypointService implements WaypointDataView {
     private final Path baseDir;
     private final MapExecutors executors;
     private final Logger logger;
+    private final List<Consumer<List<Waypoint>>> changeListeners = new ArrayList<>();
 
     private volatile WaypointStore current;
 
@@ -93,6 +95,20 @@ public final class WaypointService implements WaypointDataView {
     /** The active store, or {@code null} between sessions. */
     public WaypointStore current() {
         return current;
+    }
+
+    /**
+     * Listener that sees a copy of the store contents after every waypoint mutation, on
+     * the main thread. Attached to the active store immediately and re-attached to every
+     * store a later session loads, so the public API can broadcast waypoint changes
+     * without reaching into store creation.
+     */
+    public void addChangeListener(final Consumer<List<Waypoint>> listener) {
+        changeListeners.add(listener);
+        final WaypointStore store = current;
+        if (store != null) {
+            store.addListener(listener);
+        }
     }
 
     /** Convenience: current waypoints, or an empty list between sessions. */
@@ -195,6 +211,9 @@ public final class WaypointService implements WaypointDataView {
     ) {
         final WaypointStore store = new WaypointStore(world, state);
         store.addListener(waypoints -> saveSnapshot(world, store.state()));
+        for (final Consumer<List<Waypoint>> listener : changeListeners) {
+            store.addListener(listener);
+        }
         return store;
     }
 

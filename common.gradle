@@ -69,6 +69,8 @@ dependencies {
     }
     implementation project(':common')
     include project(':common')
+    implementation project(':api')
+    include project(':api')
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
     implementation 'org.nanohttpd:nanohttpd-websocket:2.3.1'
     include 'org.nanohttpd:nanohttpd:2.3.1'

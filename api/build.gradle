@@ -1,0 +1,50 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+// Deliberately dependency-free: third parties compile against this module while the mod
+// jar supplies the implementation at runtime, and a zero-dependency graph is what keeps
+// the JitPack build of `:api` alone fast (no loom, no Minecraft downloads).
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_16
+    targetCompatibility = JavaVersion.VERSION_16
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 16
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifactId = 'confluxmap-api'
+        }
+    }
+}
+
+// Same shape as common's platform isolation check: the api package may touch nothing but
+// the JDK, so every published class stays loadable without the mod or Minecraft present.
+tasks.register('checkApiIsolation') {
+    group = 'verification'
+    description = 'Rejects every import that is not part of the JDK.'
+    doLast {
+        final List<String> violations = []
+        final def forbidden = ~/^import\s+(static\s+)?(?!java\.)/
+        fileTree('src/main/java').matching { include '**/*.java' }.each { final File file ->
+            file.readLines().eachWithIndex { final String line, final int index ->
+                if (line.trim() =~ forbidden) {
+                    violations << "${file}:${index + 1}: ${line.trim()}"
+                }
+            }
+        }
+        if (!violations.empty) {
+            throw new GradleException("API isolation violated:\n" + violations.join('\n'))
+        }
+    }
+}
+
+check.dependsOn 'checkApiIsolation'

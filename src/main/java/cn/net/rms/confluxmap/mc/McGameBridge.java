@@ -58,6 +58,11 @@ public final class McGameBridge implements GameBridge {
         return player != null && cameraEntity != null && cameraEntity != player;
     }
 
+    @Override
+    public boolean isOnRenderThread() {
+        return client.isOnThread();
+    }
+
     private Optional<PlayerView> viewOf(final Entity entity, final float tickDelta) {
         final Identifier dim = client.world.getRegistryKey().getValue();
         return Optional.of(new PlayerView(

@@ -3,7 +3,7 @@ package cn.net.rms.confluxmap.mc.input;
 import cn.net.rms.confluxmap.compat.Keys;
 
 /** One user action shared by the vanilla and optional MaliLib keybind backends. */
-enum KeybindAction {
+public enum KeybindAction {
     TOGGLE_MINIMAP("toggle_minimap", "toggleMinimap", Keys.H, "H"),
     CYCLE_ZOOM("zoom_in", "zoomIn", Keys.RIGHT_BRACKET, "RIGHT_BRACKET"),
     OPEN_MAP("open_map", "openMap", Keys.M, "M"),

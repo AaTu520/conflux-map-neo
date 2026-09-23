@@ -153,6 +153,10 @@ Conflux Map 是一款 Fabric 平台的小地图与世界地图模组。客户端
 
 `1.21.11` 可替换为上表中的任意版本。构建产物分别输出至 `versions/<版本>/build/libs/` 与 `paper/build/libs/`。`:paper:runServer` 会下载本地 Paper 1.21.1 开发服务器并安装刚构建的插件；首次运行需在 `paper/run/eula.txt` 中接受 EULA，然后重新执行该任务。
 
+## 模组开发者
+
+Conflux Map 提供客户端 API（路径点、地图数据查询、自定义地图标记、动作与事件）。API 目前为实验性，单个依赖即可覆盖所有受支持的 Minecraft 版本。接入方式与用法见 [`docs/api.md`](docs/api.md)。
+
 ## 联系我们
 
 如需反馈问题、提出建议或参与交流，欢迎通过官方渠道联系我们：

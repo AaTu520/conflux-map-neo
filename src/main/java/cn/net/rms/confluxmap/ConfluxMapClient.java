@@ -1,7 +1,11 @@
 package cn.net.rms.confluxmap;
 
+import cn.net.rms.confluxmap.api.ConfluxMapApi;
+import cn.net.rms.confluxmap.api.ConfluxMapPlugin;
 import cn.net.rms.confluxmap.bridge.GameBridge;
 import cn.net.rms.confluxmap.core.annotation.AnnotationService;
+import cn.net.rms.confluxmap.core.api.ConfluxMapApiImpl;
+import cn.net.rms.confluxmap.core.api.CustomMarkerService;
 import cn.net.rms.confluxmap.core.cache.RegionCacheService;
 import cn.net.rms.confluxmap.core.color.DaylightModel;
 import cn.net.rms.confluxmap.core.config.ConfigIo;
@@ -33,6 +37,7 @@ import cn.net.rms.confluxmap.core.update.UpdateCheckService;
 import cn.net.rms.confluxmap.core.waypoint.WaypointRenderCatalog;
 import cn.net.rms.confluxmap.core.waypoint.WaypointService;
 import cn.net.rms.confluxmap.mc.McGameBridge;
+import cn.net.rms.confluxmap.mc.api.FabricActionApi;
 import cn.net.rms.confluxmap.mc.color.BiomeTintResolver;
 import cn.net.rms.confluxmap.mc.color.ColorReloadListener;
 import cn.net.rms.confluxmap.mc.color.SpriteColorSampler;
@@ -144,6 +149,8 @@ public final class ConfluxMapClient implements ClientModInitializer {
     private UnsupportedPlatformWarningNotifier unsupportedPlatformWarningNotifier;
     private ClientGroundTeleportService groundTeleportService;
     private Keybinds keybinds;
+    private CustomMarkerService customMarkerService;
+    private ConfluxMapApiImpl api;
 
     public static ConfluxMapClient get() {
         return instance;
@@ -301,6 +308,7 @@ public final class ConfluxMapClient implements ClientModInitializer {
         );
         clientMultiworldService.bindChunkCapture(chunkCapture);
         radarViewRange = new RadarViewRange();
+        customMarkerService = new CustomMarkerService(ConfluxMapMod.LOGGER);
         radarScanner = new EntityRadarScanner(
             client, config, radarViewRange, companionSession::entityRadarAllowed
         );
@@ -317,7 +325,7 @@ public final class ConfluxMapClient implements ClientModInitializer {
         minimapHudRenderer = new MinimapHudRenderer(
             client, config, gameBridge, tileService, tileTextureManager, radarScanner, entityIconManager,
             serverPlayerRadar, playerTrail, annotationService, layerSelector, waypointRenderCatalog,
-            radarViewRange, uiResourceTheme, chunkCapture::setMinimapViewport,
+            radarViewRange, uiResourceTheme, customMarkerService, chunkCapture::setMinimapViewport,
             chunkCapture::liveTerrainPaused
         );
         waypointItemHudRenderer = new WaypointItemHudRenderer(client, config, entityIconManager);
@@ -403,8 +411,48 @@ public final class ConfluxMapClient implements ClientModInitializer {
 
         keybinds = new Keybinds(config, configIo, layerSelector);
         clientMultiworldService.bindOpenMapKeyDisplayName(keybinds::openMapKeyDisplayName);
+
+        ClientTickEvents.END_CLIENT_TICK.register(ignored -> customMarkerService.tick());
+        api = new ConfluxMapApiImpl(
+            ConfluxMapMod.getVersion(),
+            gameBridge,
+            waypointService,
+            sessionGuard,
+            mapWorlds,
+            tileService,
+            predictionTileService,
+            daylightModel,
+            customMarkerService,
+            new FabricActionApi(
+                client, gameBridge, config, configIo, keybinds, waypointService,
+                groundTeleportService, layerSelector, sessionGuard
+            )
+        );
+        api.install();
+        // Last in the listener chain: plugins observe a session only after the mod's own
+        // listeners (notably the region-cache rotation) have applied it.
+        sessionTracker.addListener(api::onSessionChanged);
+        waypointService.addChangeListener(api::onWaypointsChanged);
+        dispatchApiPlugins(api);
+
         ClientLifecycleEvents.CLIENT_STOPPING.register(client2 -> shutdown());
         ConfluxMapMod.LOGGER.info("Conflux Map client services started ({} workers)", executors.workerCount());
+    }
+
+    /** Invokes every third-party "confluxmap" entrypoint; one failing plugin never blocks the rest. */
+    private static void dispatchApiPlugins(final ConfluxMapApi apiInstance) {
+        for (final ConfluxMapPlugin plugin : FabricLoader.getInstance()
+            .getEntrypoints("confluxmap", ConfluxMapPlugin.class)) {
+            try {
+                plugin.onConfluxMapInitialize(apiInstance);
+            } catch (final Throwable t) {
+                ConfluxMapMod.LOGGER.error(
+                    "Conflux Map API plugin {} failed to initialize",
+                    plugin.getClass().getName(),
+                    t
+                );
+            }
+        }
     }
 
     private void shutdown() {
@@ -419,6 +467,7 @@ public final class ConfluxMapClient implements ClientModInitializer {
         //#if MC>=260200
         //$$ Mesh.close();
         //#endif
+        api.shutdown();
         executors.shutdown(5000L);
     }
 
@@ -618,5 +667,14 @@ public final class ConfluxMapClient implements ClientModInitializer {
 
     public ClientGroundTeleportService groundTeleportService() {
         return groundTeleportService;
+    }
+
+    public CustomMarkerService customMarkers() {
+        return customMarkerService;
+    }
+
+    /** The public API facade; non-null once client services have started. */
+    public ConfluxMapApiImpl api() {
+        return api;
     }
 }
