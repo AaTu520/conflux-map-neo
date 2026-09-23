@@ -62,8 +62,9 @@ abstract class TestServerMixin {
     //#endif
 
     //#if MC>=11903
-    //$$ // The dimensions of the test world are built inside a synthetic lambda. Replacing its
-    //$$ // FLAT preset keeps the normal Overworld without duplicating the data-loading path.
+    //$$ // The dimensions of the test world are built inside a synthetic lambda. Replacing the
+    //$$ // flat preset it looks up keeps the normal Overworld without duplicating the data-loading
+    //$$ // path. 26.3 swaps the looked-up constant from FLAT to FLAT_ALL_DIMENSIONS.
     //#if MC>=260100
     //$$ @Redirect(
     //$$     method = "lambda$create$1("
@@ -72,8 +73,13 @@ abstract class TestServerMixin {
     //$$         + ")Lnet/minecraft/server/WorldLoader$DataLoadOutput;",
     //$$     at = @At(
     //$$         value = "FIELD",
+    //#if MC>=260300
+    //$$         target = "Lnet/minecraft/world/level/levelgen/presets/WorldPresets;FLAT_ALL_DIMENSIONS:"
+    //$$             + "Lnet/minecraft/resources/ResourceKey;",
+    //#else
     //$$         target = "Lnet/minecraft/world/level/levelgen/presets/WorldPresets;FLAT:"
     //$$             + "Lnet/minecraft/resources/ResourceKey;",
+    //#endif
     //$$         opcode = Opcodes.GETSTATIC
     //$$     )
     //$$ )

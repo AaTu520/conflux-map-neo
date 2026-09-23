@@ -1,6 +1,7 @@
 package cn.net.rms.confluxmap.nativepredict;
 
 import cn.net.rms.confluxmap.gametest.GameTestCompat;
+import cn.net.rms.confluxmap.core.predict.StructureIndex;
 //#if MC>=12105
 //$$ import net.fabricmc.fabric.api.gametest.v1.GameTest;
 //#else
@@ -44,7 +45,8 @@ public final class EndCityStructureGameTest implements FabricGameTest {
     //#endif
     //$$     )) {
     //$$         if (nativeContext == null
-    //$$             || !nativeContext.nearestStructure(20, 0, 0, 100_000, nearest)) {
+    //$$             || !nativeContext.nearestStructure(
+    //$$                 StructureIndex.StructureType.END_CITY.nativeId(), 0, 0, 100_000, nearest)) {
     //$$             GameTestCompat.fail(context, "native predictor did not find an End City");
     //$$             return;
     //$$         }
