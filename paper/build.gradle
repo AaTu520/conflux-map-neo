@@ -46,7 +46,11 @@ processResources {
 }
 
 jar {
-    dependsOn project(':common').tasks.named('jar')
+    // The zipTree collect below flattens the runtimeClasspath files into plain Files, dropping
+    // the builtBy metadata that would otherwise make project dependency jars (common, api, ...)
+    // build before this task expands them. Depend on the configuration's build dependencies as
+    // a whole instead of naming each project jar by hand.
+    dependsOn configurations.runtimeClasspath.buildDependencies
     archiveBaseName = 'confluxmap-paper'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     from {
