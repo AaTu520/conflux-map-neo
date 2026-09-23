@@ -269,20 +269,18 @@ tasks.register('checkCoreIsolation') {
     dependsOn ':common:checkPlatformIsolation'
 }
 apply from: rootProject.file('gradle/version-coverage.gradle')
+// `check` proves a version and assembles its jar in one pass — CI runs only `:check`.
+// The default `build` pulls in `check`, so pin it to the jar alone: release packaging
+// must never rerun verification.
+check.dependsOn 'assemble'
 check.dependsOn 'checkCoreIsolation'
 check.dependsOn 'checkModMetadata'
 check.dependsOn 'checkVersionCoverage'
+check.dependsOn 'validateAccessWidener'
 check.dependsOn 'runGametest'
 tasks.named('build') {
-    description = 'Assembles release artifacts and runs unit tests and non-GameTest checks'
-    setDependsOn([
-        tasks.named('assemble'),
-        tasks.named('test'),
-        tasks.named('checkCoreIsolation'),
-        tasks.named('checkModMetadata'),
-        tasks.named('checkVersionCoverage'),
-        tasks.named('validateAccessWidener'),
-    ])
+    description = 'Assembles the mod jar without running verification'
+    setDependsOn([tasks.named('assemble')])
 }
 tasks.named('runGametest') {
     doFirst {

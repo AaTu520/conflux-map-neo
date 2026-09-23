@@ -104,4 +104,10 @@ tasks.register('compileLatestPaperJava', JavaCompile) {
     options.compilerArgs << '-Xlint:deprecation'
 }
 
-check.dependsOn 'checkPaperIsolation', 'compileLatestPaperJava', ':common:check'
+// Same split as the version projects: `check` proves the adapter and assembles its jar,
+// `build` only packages so release jobs never rerun verification.
+check.dependsOn 'assemble', 'checkPaperIsolation', 'compileLatestPaperJava', ':common:check'
+tasks.named('build') {
+    description = 'Assembles the Paper plugin jar without running verification'
+    setDependsOn([tasks.named('assemble')])
+}

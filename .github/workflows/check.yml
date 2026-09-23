@@ -75,9 +75,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends mesa-vulkan-drivers
-      - name: Build and check ${{ matrix.minecraft_version }}
+      - name: Check ${{ matrix.minecraft_version }}
         id: check
-        run: ./gradlew -Pversion="$BUILD_VERSION" :${{ matrix.minecraft_version }}:build
+        run: ./gradlew -Pversion="$BUILD_VERSION" :${{ matrix.minecraft_version }}:check
       - name: Connect client to server for ${{ matrix.minecraft_version }}
         timeout-minutes: 12
         env:
@@ -364,8 +364,8 @@ jobs:
             ${{ runner.os }}-gradle-
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
-      - name: Build Paper companion
-        run: ./gradlew -Pversion="$BUILD_VERSION" :paper:build
+      - name: Check Paper companion
+        run: ./gradlew -Pversion="$BUILD_VERSION" :paper:check
       - name: Upload Paper build
         uses: actions/upload-artifact@v5
         with:
