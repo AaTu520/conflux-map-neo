@@ -172,6 +172,7 @@ final class StructureCandidateScreen extends ConfluxScreen {
         ));
         updateRows();
         updateAccess();
+        mapPane.addMenuButtons(this);
     }
 
     private int requiredPanelContentWidth() {
@@ -334,6 +335,10 @@ final class StructureCandidateScreen extends ConfluxScreen {
     //#else
     public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
     //#endif
+        if (mapPane.menuOpen() && !mapPane.menuContains(mouseX, mouseY)) {
+            mapPane.menuClickedOutside(this, mouseX, mouseY, button, splitLayout());
+            return true;
+        }
         final CandidateListUi listUi = candidateListUi();
         if (button == MouseButtons.LEFT && listUi.containsScrollBar(mouseX, mouseY)) {
             draggingScrollBar = true;
@@ -346,6 +351,10 @@ final class StructureCandidateScreen extends ConfluxScreen {
         //#else
         if (super.mouseClicked(mouseX, mouseY, button)) {
         //#endif
+            mapPane.consumePendingMenuAction(this);
+            return true;
+        }
+        if (mapPane.menuOpen()) {
             return true;
         }
         final int candidateIndex = button == MouseButtons.LEFT ? listUi.candidateAt(mouseX, mouseY) : -1;
@@ -353,7 +362,7 @@ final class StructureCandidateScreen extends ConfluxScreen {
             focus(results.get(candidateIndex));
             return true;
         }
-        return mapPane.mouseClicked(mouseX, mouseY, button, splitLayout());
+        return mapPane.mouseClicked(this, mouseX, mouseY, button, splitLayout());
     }
 
     @Override
@@ -430,7 +439,7 @@ final class StructureCandidateScreen extends ConfluxScreen {
             updateRows();
             return true;
         }
-        if (mapPane.mouseScrolled(mouseX, mouseY, amount, layout)) {
+        if (mapPane.mouseScrolled(this, mouseX, mouseY, amount, layout)) {
             return true;
         }
         //#if MC>=12002

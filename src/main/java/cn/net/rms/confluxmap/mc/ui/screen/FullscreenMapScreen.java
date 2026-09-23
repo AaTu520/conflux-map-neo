@@ -289,8 +289,6 @@ public final class FullscreenMapScreen extends ConfluxScreen {
     private static final int LOAD_STATE_UNLOADED_COLOR = 0x00000000;
     private static final int LOAD_STATE_OUTLINE_COLOR = 0xA0101018;
     private static final int LOAD_STATE_LEGEND_BACKGROUND = 0xD0181822;
-    private static final int LOCATION_MENU_BACKGROUND = 0xF0181822;
-    private static final int LOCATION_MENU_BORDER = 0xFF9A9AA8;
     private static final int TEMPORARY_LOCATION_COLOR = 0xFF3498DB;
     private static final int GRID_COLOR = 0x22FFFFFF;
     private static final int PLAYER_MARKER_COLOR = 0xFFFFFFFF;
@@ -1526,7 +1524,44 @@ public final class FullscreenMapScreen extends ConfluxScreen {
     }
 
     private void addLocationMenuButtons() {
-        final boolean heightKnown = locationMenuTarget.blockY().isPresent();
+        final List<FullscreenMapLocationMenu.ButtonSpec> specs = locationMenuButtonSpecs(
+            locationMenuTarget, locationMenuWaypoint, locationMenuPlayerId, locationMenuDeletePending
+        );
+        for (int index = 0; index < specs.size(); index++) {
+            final FullscreenMapLocationMenu.ButtonSpec spec = specs.get(index);
+            final ButtonWidget button = addDrawableChild(Widgets.button(
+                locationMenuBounds.buttonX(),
+                locationMenuBounds.buttonY(index),
+                locationMenuBounds.buttonWidth(),
+                FullscreenMapLocationMenu.BUTTON_HEIGHT,
+                Texts.translatable(spec.labelKey()),
+                ignored -> pendingLocationAction = spec.action()
+            ));
+            locationActionTooltips.put(button, spec.tooltipKey());
+            button.active = spec.active();
+            switch (spec.action()) {
+                case SET_WAYPOINT -> setWaypointLocationButton = button;
+                case EDIT_WAYPOINT -> editWaypointLocationButton = button;
+                case SHARE_LOCATION -> shareLocationButton = button;
+                case TELEPORT -> teleportLocationButton = button;
+                case DELETE_WAYPOINT, SHARE_WAYPOINT, HIGHLIGHT, HIGHLIGHT_WAYPOINT, CLEAR_HIGHLIGHT,
+                     HIGHLIGHT_PLAYER, CLEAR_PLAYER_HIGHLIGHT -> {
+                }
+            }
+        }
+    }
+
+    /**
+     * Resolves the location menu's buttons for one captured target. Shared with the embedded
+     * split-map menu so both host the same actions, enablement, and tooltips.
+     */
+    List<FullscreenMapLocationMenu.ButtonSpec> locationMenuButtonSpecs(
+        final FullscreenMapLocationMenu.Target target,
+        final WaypointRenderEntry waypoint,
+        final UUID playerId,
+        final boolean deletePending
+    ) {
+        final boolean heightKnown = target.blockY().isPresent();
         final MinecraftClient client = MinecraftClient.getInstance();
         final boolean playerPresent = client.player != null;
         final SessionGuard.Session viewed = viewSession();
@@ -1542,84 +1577,73 @@ public final class FullscreenMapScreen extends ConfluxScreen {
         final boolean teleportCommandAvailable = teleportAccess.available();
         teleportLocationUnavailableKey = teleportAccess.reasonKey();
         final boolean existingWaypoint = FullscreenMapLocationMenu.isSavedWaypoint(
-            locationMenuPlayerId == null ? locationMenuWaypoint : null
+            playerId == null ? waypoint : null
         );
-        final boolean waypointEditable = existingWaypoint && waypointEditable(locationMenuWaypoint);
+        final boolean waypointEditable = existingWaypoint && waypointEditable(waypoint);
         final String waypointDeleteUnavailableKey = existingWaypoint
-            ? waypointDeleteUnavailableKey(locationMenuWaypoint) : null;
+            ? waypointDeleteUnavailableKey(waypoint) : null;
         final boolean waypointDeletable = existingWaypoint && waypointDeleteUnavailableKey == null;
         final List<FullscreenMapLocationMenu.Action> actions = FullscreenMapLocationMenu.actions(
-            teleportCommandAvailable, existingWaypoint, locationMenuTargetHighlighted(),
-            locationMenuPlayerId != null
+            teleportCommandAvailable, existingWaypoint,
+            locationMenuTargetHighlighted(waypoint, target, playerId),
+            playerId != null
         );
-        for (int index = 0; index < actions.size(); index++) {
-            final FullscreenMapLocationMenu.Action action = actions.get(index);
-            final ButtonWidget button = addDrawableChild(Widgets.button(
-                locationMenuBounds.buttonX(),
-                locationMenuBounds.buttonY(index),
-                locationMenuBounds.buttonWidth(),
-                FullscreenMapLocationMenu.BUTTON_HEIGHT,
-                Texts.translatable(
-                    action == FullscreenMapLocationMenu.Action.DELETE_WAYPOINT
-                        && locationMenuDeletePending
-                        ? "confluxmap.screen.waypoints.confirm"
-                        : action.translationKey()
-                ),
-                ignored -> pendingLocationAction = action
-            ));
-            locationActionTooltips.put(button, actionTooltipKey(action));
-            button.active = FullscreenMapLocationMenu.actionEnabled(
+        final List<FullscreenMapLocationMenu.ButtonSpec> specs = new ArrayList<>(actions.size());
+        for (final FullscreenMapLocationMenu.Action action : actions) {
+            boolean active = FullscreenMapLocationMenu.actionEnabled(
                 action, playerPresent, heightKnown, teleportCommandAvailable,
                 waypointEditable, waypointDeletable
             );
+            String tooltipKey = actionTooltipKey(action);
             if (action == FullscreenMapLocationMenu.Action.DELETE_WAYPOINT
-                && !button.active && waypointDeleteUnavailableKey != null) {
-                locationActionTooltips.put(button, waypointDeleteUnavailableKey);
+                && !active && waypointDeleteUnavailableKey != null) {
+                tooltipKey = waypointDeleteUnavailableKey;
             }
             if (!viewingLiveWorld()
                 && (action == FullscreenMapLocationMenu.Action.SHARE_LOCATION
                     || action == FullscreenMapLocationMenu.Action.SHARE_WAYPOINT)) {
-                button.active = false;
+                active = false;
             }
             if (action == FullscreenMapLocationMenu.Action.HIGHLIGHT
                 || action == FullscreenMapLocationMenu.Action.HIGHLIGHT_WAYPOINT
                 || action == FullscreenMapLocationMenu.Action.HIGHLIGHT_PLAYER) {
-                button.active = (locationMenuPlayerId != null
+                active = (playerId != null
                     ? viewingLiveWorld() : viewingLiveSession())
-                    && (locationMenuWaypoint != null || locationMenuTarget != null);
+                    && (waypoint != null || target != null);
             } else if (action == FullscreenMapLocationMenu.Action.CLEAR_HIGHLIGHT) {
-                button.active = waypointHighlightState.active();
+                active = waypointHighlightState.active();
             } else if (action == FullscreenMapLocationMenu.Action.CLEAR_PLAYER_HIGHLIGHT) {
-                button.active = locationMenuPlayerId != null
-                    && serverPlayerRadar.isHighlighted(locationMenuPlayerId);
+                active = playerId != null && serverPlayerRadar.isHighlighted(playerId);
             }
-            switch (action) {
-                case SET_WAYPOINT -> setWaypointLocationButton = button;
-                case EDIT_WAYPOINT -> editWaypointLocationButton = button;
-                case SHARE_LOCATION -> shareLocationButton = button;
-                case TELEPORT -> teleportLocationButton = button;
-                case DELETE_WAYPOINT, SHARE_WAYPOINT, HIGHLIGHT, HIGHLIGHT_WAYPOINT, CLEAR_HIGHLIGHT,
-                     HIGHLIGHT_PLAYER, CLEAR_PLAYER_HIGHLIGHT -> {
-                }
-            }
+            specs.add(new FullscreenMapLocationMenu.ButtonSpec(
+                action,
+                action == FullscreenMapLocationMenu.Action.DELETE_WAYPOINT && deletePending
+                    ? "confluxmap.screen.waypoints.confirm"
+                    : action.translationKey(),
+                tooltipKey,
+                active
+            ));
         }
+        return specs;
     }
 
-    private boolean locationMenuTargetHighlighted() {
+    private boolean locationMenuTargetHighlighted(
+        final WaypointRenderEntry waypoint,
+        final FullscreenMapLocationMenu.Target target,
+        final UUID playerId
+    ) {
         if (!viewingLiveWorld()) {
             return false;
         }
-        if (locationMenuPlayerId != null) {
-            return serverPlayerRadar.isHighlighted(locationMenuPlayerId);
+        if (playerId != null) {
+            return serverPlayerRadar.isHighlighted(playerId);
         }
-        if (locationMenuWaypoint != null) {
-            return waypointHighlightState.matchesEntry(
-                locationMenuWaypoint, viewSession().dimension()
-            );
+        if (waypoint != null) {
+            return waypointHighlightState.matchesEntry(waypoint, viewSession().dimension());
         }
-        return locationMenuTarget != null && waypointHighlightState.matches(
-            locationMenuTarget.blockX() + 0.5,
-            locationMenuTarget.blockZ() + 0.5,
+        return target != null && waypointHighlightState.matches(
+            target.blockX() + 0.5,
+            target.blockZ() + 0.5,
             viewSession().dimension()
         );
     }
@@ -2001,43 +2025,77 @@ public final class FullscreenMapScreen extends ConfluxScreen {
         if (closingDrawing) {
             selectAnnotationTool(AnnotationTool.SELECT);
         }
+        final FullscreenMapLocationMenu.Capture capture = captureLocationMenu(
+            mouseX, mouseY, width / 2.0, height / 2.0,
+            width - MARGIN - CONTROL_SIZE - CONTROL_GAP, height
+        );
+        locationMenuBounds = capture.bounds();
+        locationMenuTarget = capture.target();
+        locationMenuWaypoint = capture.waypoint();
+        locationMenuPlayerId = capture.playerId();
+        pendingLocationAction = null;
+        locationMenuDeletePending = false;
+        mapPointerPress = false;
+        rebuildWaypointControls();
+    }
+
+    /**
+     * Captures the right-click menu target for a split-map screen embedding this map.
+     * Hover state comes from the last {@link #renderEmbedded} pass, and the panel is placed
+     * within the map pane rather than the full screen.
+     */
+    FullscreenMapLocationMenu.Capture openEmbeddedLocationMenu(
+        final double mouseX,
+        final double mouseY,
+        final SplitMapLayout layout
+    ) {
+        return captureLocationMenu(
+            mouseX, mouseY, layout.mapCenterX(), layout.mapCenterY(),
+            layout.mapWidth(), layout.screenHeight()
+        );
+    }
+
+    private FullscreenMapLocationMenu.Capture captureLocationMenu(
+        final double mouseX,
+        final double mouseY,
+        final double mapCenterX,
+        final double mapCenterY,
+        final int viewportWidth,
+        final int viewportHeight
+    ) {
         final ServerPlayerRadarState.PlayerView playerTarget = hoveredRadarPlayer;
         final double worldX = playerTarget == null
-            ? centerX + (mouseX - width / 2.0) * scale : playerTarget.x();
+            ? centerX + (mouseX - mapCenterX) * scale : playerTarget.x();
         final double worldZ = playerTarget == null
-            ? centerZ + (mouseY - height / 2.0) * scale : playerTarget.z();
+            ? centerZ + (mouseY - mapCenterY) * scale : playerTarget.z();
         final FullscreenMapLocationMenu.Point point = FullscreenMapLocationMenu.pointAt(
             worldX, worldZ, playerTarget == null ? hoveredStructure : null
         );
         final int blockX = point.blockX();
         final int blockZ = point.blockZ();
-        locationMenuPlayerId = playerTarget == null ? null : playerTarget.playerId();
-        locationMenuWaypoint = playerTarget == null ? hoveredWaypoint : null;
-        final boolean existingWaypoint = FullscreenMapLocationMenu.isSavedWaypoint(
-            locationMenuPlayerId == null ? locationMenuWaypoint : null
-        );
-        final int actionCount = FullscreenMapLocationMenu.actions(
-            false, existingWaypoint, false, playerTarget != null
-        ).size();
-        final int menuViewportWidth = width - MARGIN - CONTROL_SIZE - CONTROL_GAP;
-        locationMenuBounds = FullscreenMapLocationMenu.place(
+        final WaypointRenderEntry waypoint = playerTarget == null ? hoveredWaypoint : null;
+        final boolean existingWaypoint = FullscreenMapLocationMenu.isSavedWaypoint(waypoint);
+        // Sizing only: HIGHLIGHT and CLEAR_HIGHLIGHT swap 1:1, and the real state is resolved
+        // when the buttons are built (locationMenuButtonSpecs).
+        final FullscreenMapLocationMenu.Bounds bounds = FullscreenMapLocationMenu.place(
             (int) Math.floor(mouseX),
             (int) Math.floor(mouseY),
-            menuViewportWidth,
-            height,
-            actionCount
+            viewportWidth,
+            viewportHeight,
+            FullscreenMapLocationMenu.actions(
+                false, existingWaypoint, false, playerTarget != null
+            ).size()
         );
-        locationMenuTarget = FullscreenMapLocationMenu.targetAt(
+        final FullscreenMapLocationMenu.Target target = FullscreenMapLocationMenu.targetAt(
             blockX,
             playerTarget == null
                 ? surfaceYAt(blockX, blockZ)
                 : OptionalInt.of((int) Math.floor(playerTarget.y()) - 1),
             blockZ
         );
-        pendingLocationAction = null;
-        locationMenuDeletePending = false;
-        mapPointerPress = false;
-        rebuildWaypointControls();
+        return new FullscreenMapLocationMenu.Capture(
+            bounds, target, waypoint, playerTarget == null ? null : playerTarget.playerId()
+        );
     }
 
     private OptionalInt surfaceYAt(final int blockX, final int blockZ) {
@@ -2075,6 +2133,20 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             return;
         }
         dismissLocationMenu();
+        runLocationAction(action, target, waypoint, playerId, this);
+    }
+
+    /**
+     * Runs one captured location-menu action. Embedded split-map hosts pass themselves as
+     * {@code returnTo} so the edit/share screens they open come back to them.
+     */
+    void runLocationAction(
+        final FullscreenMapLocationMenu.Action action,
+        final FullscreenMapLocationMenu.Target target,
+        final WaypointRenderEntry waypoint,
+        final UUID playerId,
+        final Screen returnTo
+    ) {
         switch (action) {
             case HIGHLIGHT, HIGHLIGHT_WAYPOINT -> {
                 serverPlayerRadar.clearHighlight();
@@ -2104,7 +2176,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             case CLEAR_PLAYER_HIGHLIGHT -> serverPlayerRadar.clearHighlight();
             case SET_WAYPOINT -> target.blockY().ifPresent(y -> MinecraftAccess.setScreen(MinecraftClient.getInstance(),
                 WaypointEditScreen.forCreate(
-                    this,
+                    returnTo,
                     viewSession().dimension(),
                     target.blockX(),
                     y,
@@ -2114,7 +2186,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             ));
             case EDIT_WAYPOINT -> {
                 if (waypoint != null) {
-                    openWaypointFromLocationMenu(waypoint);
+                    openWaypointFromLocationMenu(waypoint, returnTo);
                 }
             }
             case DELETE_WAYPOINT -> {
@@ -2124,12 +2196,12 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             }
             case SHARE_LOCATION -> {
                 if (target.blockY().isPresent()) {
-                    shareTemporaryLocation(target);
+                    shareTemporaryLocation(target, returnTo);
                 }
             }
             case SHARE_WAYPOINT -> {
                 if (waypoint != null) {
-                    shareWaypoint(waypoint);
+                    shareWaypoint(waypoint, returnTo);
                 }
             }
             case TELEPORT -> {
@@ -2151,7 +2223,10 @@ public final class FullscreenMapScreen extends ConfluxScreen {
         ));
     }
 
-    private void shareTemporaryLocation(final FullscreenMapLocationMenu.Target target) {
+    private void shareTemporaryLocation(
+        final FullscreenMapLocationMenu.Target target,
+        final Screen returnTo
+    ) {
         final MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null || target.blockY().isEmpty()) {
             return;
@@ -2171,11 +2246,11 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             System.currentTimeMillis()
         );
         MinecraftAccess.setScreen(client, new WaypointShareConfirmScreen(
-            this, temporary, WaypointShareConfirmScreen.Target.CHAT
+            returnTo, temporary, WaypointShareConfirmScreen.Target.CHAT
         ));
     }
 
-    private void shareWaypoint(final WaypointRenderEntry waypoint) {
+    private void shareWaypoint(final WaypointRenderEntry waypoint, final Screen returnTo) {
         final MinecraftClient client = MinecraftClient.getInstance();
         if (waypoint.local()) {
             viewWaypointService().list().stream()
@@ -2184,7 +2259,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
                 .ifPresent(local -> MinecraftAccess.setScreen(
                     client,
                     new WaypointShareConfirmScreen(
-                        this, local, WaypointShareConfirmScreen.Target.CHAT
+                        returnTo, local, WaypointShareConfirmScreen.Target.CHAT
                     )
                 ));
             return;
@@ -2193,7 +2268,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             MinecraftAccess.setScreen(
                 client,
                 WaypointShareConfirmScreen.forSharedWaypoint(
-                    this,
+                    returnTo,
                     shared
                 )
             )
@@ -2236,14 +2311,17 @@ public final class FullscreenMapScreen extends ConfluxScreen {
             : "confluxmap.screen.waypoint.public_unavailable";
     }
 
-    private void openWaypointFromLocationMenu(final WaypointRenderEntry waypoint) {
+    private void openWaypointFromLocationMenu(
+        final WaypointRenderEntry waypoint,
+        final Screen returnTo
+    ) {
         if (waypoint.local()) {
             viewWaypointService().list().stream()
                 .filter(local -> local.id.equals(waypoint.id()))
                 .findFirst()
                 .ifPresent(local -> MinecraftAccess.setScreen(
                     MinecraftClient.getInstance(), WaypointEditScreen.forEdit(
-                        this, local, this::viewWaypointStore
+                        returnTo, local, this::viewWaypointStore
                     )
                 ));
             return;
@@ -2251,7 +2329,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
         sharedWaypoints.find(waypoint.id())
             .filter(sharedWaypoints::canUpdate)
             .ifPresent(shared -> MinecraftAccess.setScreen(
-                MinecraftClient.getInstance(), WaypointEditScreen.forPublicEdit(this, shared)
+                MinecraftClient.getInstance(), WaypointEditScreen.forPublicEdit(returnTo, shared)
             ));
     }
 
@@ -3035,15 +3113,7 @@ public final class FullscreenMapScreen extends ConfluxScreen {
         if (locationMenuBounds == null) {
             return;
         }
-        final int x = locationMenuBounds.x();
-        final int y = locationMenuBounds.y();
-        final int right = x + locationMenuBounds.width();
-        final int bottom = y + locationMenuBounds.height();
-        draw.fill(x, y, right, bottom, LOCATION_MENU_BACKGROUND);
-        draw.fill(x, y, right, y + 1, LOCATION_MENU_BORDER);
-        draw.fill(x, bottom - 1, right, bottom, LOCATION_MENU_BORDER);
-        draw.fill(x, y, x + 1, bottom, LOCATION_MENU_BORDER);
-        draw.fill(right - 1, y, right, bottom, LOCATION_MENU_BORDER);
+        FullscreenMapLocationMenu.drawPanel(draw, locationMenuBounds);
     }
 
     private TargetDropdown targetDropdown() {

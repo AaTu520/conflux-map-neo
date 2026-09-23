@@ -3,10 +3,12 @@ package cn.net.rms.confluxmap.mc.ui.screen;
 import cn.net.rms.confluxmap.core.model.MapLayer;
 import cn.net.rms.confluxmap.core.predict.StructureIndex;
 import cn.net.rms.confluxmap.core.waypoint.WaypointRenderEntry;
+import cn.net.rms.confluxmap.mc.ui.GuiDraw;
 import cn.net.rms.confluxmap.mc.ui.world.WaypointHighlightState;
 import cn.net.rms.confluxmap.mc.world.LayerSelector;
 import java.util.List;
 import java.util.OptionalInt;
+import java.util.UUID;
 
 /** Layout and captured map target for the fullscreen map's right-click location menu. */
 final class FullscreenMapLocationMenu {
@@ -16,6 +18,8 @@ final class FullscreenMapLocationMenu {
     static final int BUTTON_HEIGHT = 20;
     static final int BUTTON_GAP = 2;
     static final int CURSOR_GAP = 2;
+    private static final int PANEL_BACKGROUND = 0xF0181822;
+    private static final int PANEL_BORDER = 0xFF9A9AA8;
 
     enum Action {
         SET_WAYPOINT("confluxmap.map.location_menu.set_waypoint"),
@@ -182,6 +186,35 @@ final class FullscreenMapLocationMenu {
             case NO_SKY_NO_CEILING -> MapLayer.END_SURFACE;
             case HAS_CEILING -> MapLayer.NETHER_CEILING;
         };
+    }
+
+    static void drawPanel(final GuiDraw draw, final Bounds bounds) {
+        final int x = bounds.x();
+        final int y = bounds.y();
+        final int right = x + bounds.width();
+        final int bottom = y + bounds.height();
+        draw.fill(x, y, right, bottom, PANEL_BACKGROUND);
+        draw.fill(x, y, right, y + 1, PANEL_BORDER);
+        draw.fill(x, bottom - 1, right, bottom, PANEL_BORDER);
+        draw.fill(x, y, x + 1, bottom, PANEL_BORDER);
+        draw.fill(right - 1, y, right, bottom, PANEL_BORDER);
+    }
+
+    /**
+     * One menu placement captured at right-click time: resolved panel geometry, the block
+     * target, and the hovered waypoint/player the actions apply to. Shared by the fullscreen
+     * menu and the embedded split-map menu.
+     */
+    record Capture(
+        Bounds bounds,
+        Target target,
+        WaypointRenderEntry waypoint,
+        UUID playerId
+    ) {
+    }
+
+    /** One menu button's fully resolved presentation, shared by every hosting screen. */
+    record ButtonSpec(Action action, String labelKey, String tooltipKey, boolean active) {
     }
 
     record Bounds(int x, int y, int width, int height) {

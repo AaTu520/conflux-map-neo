@@ -217,6 +217,7 @@ final class StructureSearchScreen extends ConfluxScreen {
         ));
         updatePolicyAccess();
         updateRows();
+        mapPane.addMenuButtons(this);
     }
 
     private void updateActionWidths() {
@@ -522,7 +523,7 @@ final class StructureSearchScreen extends ConfluxScreen {
             updateRows();
             return true;
         }
-        if (mapPane.mouseScrolled(mouseX, mouseY, amount, layout)) {
+        if (mapPane.mouseScrolled(this, mouseX, mouseY, amount, layout)) {
             return true;
         }
         //#if MC>=12002
@@ -541,6 +542,10 @@ final class StructureSearchScreen extends ConfluxScreen {
     //#else
     public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
     //#endif
+        if (mapPane.menuOpen() && !mapPane.menuContains(mouseX, mouseY)) {
+            mapPane.menuClickedOutside(this, mouseX, mouseY, button, splitLayout());
+            return true;
+        }
         final ScrollBarModel bar = scrollBar();
         if (button == MouseButtons.LEFT && bar.visible()
             && mouseX >= scrollBarX() && mouseX < scrollBarX() + SCROLLBAR_WIDTH
@@ -558,9 +563,13 @@ final class StructureSearchScreen extends ConfluxScreen {
         //#else
         if (super.mouseClicked(mouseX, mouseY, button)) {
         //#endif
+            mapPane.consumePendingMenuAction(this);
             return true;
         }
-        return mapPane.mouseClicked(mouseX, mouseY, button, splitLayout());
+        if (mapPane.menuOpen()) {
+            return true;
+        }
+        return mapPane.mouseClicked(this, mouseX, mouseY, button, splitLayout());
     }
 
     @Override

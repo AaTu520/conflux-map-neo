@@ -3,6 +3,7 @@ package cn.net.rms.confluxmap.mc.ui.screen;
 import cn.net.rms.confluxmap.mc.ui.GuiDraw;
 import cn.net.rms.confluxmap.compat.Texts;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 //#if MC>=12000
@@ -14,12 +15,14 @@ import net.minecraft.client.util.math.MatrixStack;
 //$$ import net.minecraft.client.input.KeyInput;
 //#endif
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ClickableWidget;
 import net.minecraft.text.Text;
 
 /** Screen base that keeps the MatrixStack-to-DrawContext rewrite at one lifecycle seam. */
 public abstract class ConfluxScreen extends Screen {
     private final Map<ClickableWidget, String> disabledTooltipKeys = new IdentityHashMap<>();
+    private final Map<ClickableWidget, String> locationMenuTooltipKeys = new LinkedHashMap<>();
     private final HotkeyFocusDelay initialFocusDelay = new HotkeyFocusDelay();
     private Runnable enterAction;
     private BooleanSupplier enterActionEnabled = () -> false;
@@ -87,6 +90,7 @@ public abstract class ConfluxScreen extends Screen {
     //$$     }
     //$$     renderAfterWidgets(draw, mouseX, mouseY, tickDelta);
     //$$     renderDisabledTooltip(draw, mouseX, mouseY);
+    //$$     renderLocationMenuTooltip(draw, mouseX, mouseY);
     //$$ }
     //$$
     //$$ @Override
@@ -128,6 +132,7 @@ public abstract class ConfluxScreen extends Screen {
     //$$     }
     //$$     renderAfterWidgets(draw, mouseX, mouseY, tickDelta);
     //$$     renderDisabledTooltip(draw, mouseX, mouseY);
+    //$$     renderLocationMenuTooltip(draw, mouseX, mouseY);
     //$$ }
     //$$
     //#if MC>=12002
@@ -176,6 +181,7 @@ public abstract class ConfluxScreen extends Screen {
         super.render(matrices, mouseX, mouseY, tickDelta);
         renderAfterWidgets(draw, mouseX, mouseY, tickDelta);
         renderDisabledTooltip(draw, mouseX, mouseY);
+        renderLocationMenuTooltip(draw, mouseX, mouseY);
     }
     //#endif
 
@@ -261,6 +267,49 @@ public abstract class ConfluxScreen extends Screen {
         for (final Map.Entry<ClickableWidget, String> entry : disabledTooltipKeys.entrySet()) {
             final ClickableWidget widget = entry.getKey();
             if (widget.visible && !widget.active && widget.isHovered()) {
+                draw.drawTooltip(
+                    this,
+                    this.textRenderer,
+                    Texts.translatable(entry.getValue()),
+                    mouseX,
+                    mouseY
+                );
+                return;
+            }
+        }
+    }
+
+    /** Adds one embedded location-menu button to this screen's widget layer. */
+    ButtonWidget hostLocationMenuButton(final ButtonWidget button) {
+        return addDrawableChild(button);
+    }
+
+    /**
+     * Tooltip for an embedded location-menu button, shown on hover whether or not the
+     * action is currently available.
+     */
+    void setLocationMenuTooltip(final ButtonWidget button, final String translationKey) {
+        if (translationKey == null) {
+            locationMenuTooltipKeys.remove(button);
+        } else {
+            locationMenuTooltipKeys.put(button, translationKey);
+        }
+    }
+
+    /**
+     * Recreates this screen's widgets after the embedded location menu opened, closed, or
+     * re-armed its delete confirmation.
+     */
+    void rebuildForEmbeddedLocationMenu() {
+        clearChildren();
+        init();
+    }
+
+    private void renderLocationMenuTooltip(final GuiDraw draw, final int mouseX, final int mouseY) {
+        locationMenuTooltipKeys.entrySet().removeIf(entry -> !children().contains(entry.getKey()));
+        for (final Map.Entry<ClickableWidget, String> entry : locationMenuTooltipKeys.entrySet()) {
+            final ClickableWidget widget = entry.getKey();
+            if (widget.visible && widget.isHovered()) {
                 draw.drawTooltip(
                     this,
                     this.textRenderer,

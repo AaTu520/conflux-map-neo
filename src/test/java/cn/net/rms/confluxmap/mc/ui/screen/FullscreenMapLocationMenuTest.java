@@ -290,6 +290,45 @@ class FullscreenMapLocationMenuTest {
         );
     }
 
+    @Test
+    void splitMapScreensHostTheRightClickLocationMenu() throws IOException {
+        final Path root = projectRoot();
+        final String pane = Files.readString(root.resolve(
+            "src/main/java/cn/net/rms/confluxmap/mc/ui/screen/SplitMapPane.java"
+        )).replace("\r\n", "\n");
+        assertTrue(
+            pane.contains("map.openEmbeddedLocationMenu(mouseX, mouseY, layout)"),
+            "the split map pane must capture menu targets through the embedded map"
+        );
+        assertTrue(
+            pane.contains("map.runLocationAction(action, target, waypoint, playerId, host)"),
+            "the split map pane must run actions on the embedded map with itself as return screen"
+        );
+        assertTrue(
+            pane.contains("map.locationMenuButtonSpecs("),
+            "the split map pane must reuse the fullscreen menu's button specs"
+        );
+
+        for (final String name : new String[] {
+            "StructureSearchScreen", "StructureCandidateScreen", "BiomeCandidateScreen"
+        }) {
+            final String source = Files.readString(root.resolve(
+                "src/main/java/cn/net/rms/confluxmap/mc/ui/screen/" + name + ".java"
+            )).replace("\r\n", "\n");
+            assertTrue(
+                source.contains("mapPane.addMenuButtons(this)"),
+                name + " must re-add the menu buttons when its widgets are rebuilt"
+            );
+            final int outsideGuard = source.indexOf("mapPane.menuClickedOutside(this,");
+            final int widgetDispatch = source.indexOf("super.mouseClicked");
+            final int consume = source.indexOf("mapPane.consumePendingMenuAction(this)");
+            assertTrue(
+                outsideGuard >= 0 && widgetDispatch > outsideGuard && consume > widgetDispatch,
+                name + " must route clicks around the open menu before its widget dispatch"
+            );
+        }
+    }
+
     private static void assertInsideViewport(
         final FullscreenMapLocationMenu.Bounds bounds,
         final int viewportWidth,
