@@ -3,7 +3,7 @@ import com.replaymod.gradle.preprocess.Node
 plugins {
     id 'net.fabricmc.fabric-loom' version '1.17-SNAPSHOT' apply false
     id 'net.fabricmc.fabric-loom-remap' version '1.17-SNAPSHOT' apply false
-    id 'com.replaymod.preprocess' version '221276c7d4'
+    id 'com.replaymod.preprocess' version 'v1.0.0'
 }
 // Minecraft switched from three-segment (1.21.11) to two-segment (26.1) versions with the 26.x
 // line. Padding a missing patch to 00 keeps both shapes comparable as one integer, so 1.21.11

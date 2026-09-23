@@ -6,10 +6,6 @@ pluginManagement {
         }
         maven {
             name = 'Jitpack'
-            url = 'https://maven.fallenbreath.me/jitpack'
-        }
-        maven {
-            name = 'JitpackOrigin'
             url = 'https://jitpack.io'
         }
         mavenCentral()
@@ -18,11 +14,15 @@ pluginManagement {
     resolutionStrategy {
         eachPlugin {
             switch (requested.id.id) {
-                // Upstream rather than the Fallen-Breath fork: the fork stopped at 2025-07 and
-                // types its createNode mappings parameter as non-null, which rejects the null
-                // namespace an unobfuscated version node needs.
+                // Served from the Conflux-Union fork of ReplayMod/preprocessor rather than
+                // com.github.ReplayMod directly: the upstream jitpack build is outside our
+                // control, while our tag v1.0.0 pins upstream commit 221276c7d4 (plus a remap
+                // coordinate rewrite onto our own fork) and can be rebuilt at will. Do not
+                // switch back to a Fallen-Breath-flavored build: its createNode maps parameter
+                // is typed non-null, which rejects the null namespace an unobfuscated version
+                // node needs.
                 case 'com.replaymod.preprocess': {
-                    useModule "com.github.ReplayMod:preprocessor:$requested.version"
+                    useModule "com.github.Conflux-Union:preprocessor:$requested.version"
                     break
                 }
                 // 26.1 is unobfuscated: fabric-loom applies to it without remapping, while every
